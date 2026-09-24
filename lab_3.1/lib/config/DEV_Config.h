@@ -13,6 +13,10 @@
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/pwm.h"
@@ -26,12 +30,12 @@
 #define LCD_DC_PIN		8
 #define LCD_CS_PIN		9
 #define LCD_CLK_PIN		10
-#define LCD_BKL_PIN		13   // LCD Backlight (PWM) - now safe, SD card uses GPIO 22
+#define LCD_BKL_PIN		13  // LCD Backlight (PWM) - now safe, SD card uses GPIO 22
 #define LCD_MOSI_PIN	11
 #define LCD_MISO_PIN	12
 #define TP_CS_PIN		16
 #define TP_IRQ_PIN		17
-#define SD_CS_PIN		22   // SD Card CS - separated from LCD_BKL_PIN
+#define SD_CS_PIN		22  // SD Card CS - separated from LCD_BKL_PIN
 
 #define SPI_PORT		spi1
 #define  MAX_BMP_FILES  25 
@@ -49,5 +53,9 @@ uint8_t SPI4W_Read_Byte(uint8_t value);
 
 void Driver_Delay_ms(uint32_t xms);
 void Driver_Delay_us(uint32_t xus);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
