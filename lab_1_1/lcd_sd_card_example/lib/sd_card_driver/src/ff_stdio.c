@@ -1,14 +1,14 @@
 /* ff_stdio.c
 Copyright 2021 Carl John Kugler III
 
-Licensed under the Apache License, Version 2.0 (the License); you may not use 
-this file except in compliance with the License. You may obtain a copy of the 
+Licensed under the Apache License, Version 2.0 (the License); you may not use
+this file except in compliance with the License. You may obtain a copy of the
 License at
 
-   http://www.apache.org/licenses/LICENSE-2.0 
-Unless required by applicable law or agreed to in writing, software distributed 
-under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR 
-CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+   http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 // For compatibility with FreeRTOS+FAT API
@@ -198,7 +198,7 @@ char *ff_getcwd(char *pcBuffer, size_t xBufferLength) {
     //);
     char buf[ffconfigMAX_FILENAME] = {0};
     FRESULT fr = f_getcwd(buf, sizeof buf);
-    // f_getcwd uses buf as a work area, 
+    // f_getcwd uses buf as a work area,
     // so even though the string is null-terminated,
     // bytes near the end might not be nulls.
     myASSERT(strlen(buf) < sizeof buf);
@@ -216,7 +216,7 @@ char *ff_getcwd(char *pcBuffer, size_t xBufferLength) {
             else
                 p = buf;
             int rc = snprintf(pcBuffer, xBufferLength, "%s", p);
-            // only when this returned value is non-negative and less than n, 
+            // only when this returned value is non-negative and less than n,
             // the string has been completely written
             if (!(0 <= rc && (size_t)rc < xBufferLength))
                 return NULL;
@@ -321,15 +321,15 @@ int ff_fseek(FF_FILE *pxStream, int iOffset, int iWhence) {
     TRACE_PRINTF("%s\n", __func__);
     FRESULT fr = -1;
     switch (iWhence) {
-        case FF_SEEK_CUR:  // The current file position.
+        case FF_SEEK_CUR:  // The current file position
             if ((int)f_tell(pxStream) + iOffset < 0) return -1;
             fr = f_lseek(pxStream, f_tell(pxStream) + iOffset);
             break;
-        case FF_SEEK_END:  // The end of the file.
+        case FF_SEEK_END:  // The end of the file
             if ((int)f_size(pxStream) + iOffset < 0) return -1;
             fr = f_lseek(pxStream, f_size(pxStream) + iOffset);
             break;
-        case FF_SEEK_SET:  // The beginning of the file.
+        case FF_SEEK_SET:  // The beginning of the file
             if (iOffset < 0) return -1;
             fr = f_lseek(pxStream, iOffset);
             break;

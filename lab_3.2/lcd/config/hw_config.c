@@ -1,4 +1,3 @@
-
 /* hw_config.c
 Copyright 2021 Carl John Kugler III
 
@@ -16,7 +15,6 @@ specific language governing permissions and limitations under the License.
 /*
 
 This file should be tailored to match the hardware design.
-
 
 There should be one element of the spi[] array for each RP2040 hardware SPI used.
 
@@ -48,7 +46,7 @@ with Raspberry Pi Pico (RP2040) / Pico W.
 // Using SPI1 to avoid conflicts with CYW43439 WiFi chip (which uses SPI0 internally on Pico W)
 static spi_t spis[] = {
     {  // SPI1 for SD card (avoiding CYW43439 conflict)
-        .hw_inst = spi1,  // Use SPI1 instead of SPI0
+        .hw_inst = spi1,  // use SPI1 instead of SPI0
         .sck_gpio = 10,   // SPI1 SCK  (GP10)
         .mosi_gpio = 11,  // SPI1 MOSI (GP11) - TX
         .miso_gpio = 12,  // SPI1 MISO (GP12) - RX
@@ -93,8 +91,8 @@ static sd_sdio_if_t sdio_ifs[] = {
         .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-        .SDIO_PIO = pio0,          // Use PIO0 (CYW43 uses PIO internally, but PIO0 is dedicated to SDIO)
-        .DMA_IRQ_num = DMA_IRQ_1,  // Use DMA_IRQ_1 to avoid conflict with WiFi (which may use DMA_IRQ_0)
+        .SDIO_PIO = pio0,          // use PIO0 (CYW43 uses PIO internally, but PIO0 is dedicated to SDIO)
+        .DMA_IRQ_num = DMA_IRQ_1,  // use DMA_IRQ_1 to avoid conflict with WiFi (which may use DMA_IRQ_0)
         .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
     }
 };
@@ -107,15 +105,15 @@ static sd_card_t sd_cards[] = {
     {  // sd_cards[0]: Socket sd0 on Waveshare Pico-Eval-Board
 #if USE_SPI
         .type = SD_IF_SPI,
-        .spi_if_p = &spi_ifs[0],  // Pointer to the SPI interface driving this card
+        .spi_if_p = &spi_ifs[0],  // pointer to the SPI interface driving this card
 #else
         .type = SD_IF_SDIO,
-        .sdio_if_p = &sdio_ifs[0],  // Pointer to the SDIO interface driving this card
+        .sdio_if_p = &sdio_ifs[0],  // pointer to the SDIO interface driving this card
 #endif
         // SD Card detect:
         .use_card_detect = false,
         .card_detect_gpio = 0,
-        .card_detected_true = 0,  // What the GPIO read returns when a card is present.
+        .card_detected_true = 0,  // what the GPIO read returns when a card is present
         .card_detect_use_pull = false,
         .card_detect_pull_hi = false
     }

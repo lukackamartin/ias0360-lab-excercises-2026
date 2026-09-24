@@ -4,7 +4,6 @@
 #include <vector>
 #include <cstdint>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,12 +15,11 @@ extern "C" {
 }
 #endif
 
-
 typedef uint32_t hex_color_t;
 
 class Button {
     public:
-        Button(int x, int y, int w, int h, const char* label, DOT_PIXEL font_size= DOT_PIXEL_2X2, 
+        Button(int x, int y, int w, int h, const char* label, DOT_PIXEL font_size = DOT_PIXEL_2X2,
                hex_color_t bg_color=BLUE, hex_color_t fg_color=WHITE, uint8_t letter_offset_x=0, uint8_t letter_offset_y=0);
         ~Button();
 
@@ -46,12 +44,11 @@ class Button {
         void (*callback_)() = nullptr;
 };
 
-
 class TextField {
     public:
-        TextField() 
+        TextField()
             : x0_(0), y0_(0), box_w_(0), box_h_(0), x1_(0), y1_(0) {}
-        TextField(uint16_t x0, uint16_t y0, uint16_t box_w, uint16_t box_h) 
+        TextField(uint16_t x0, uint16_t y0, uint16_t box_w, uint16_t box_h)
             : x0_(x0), y0_(y0), box_w_(box_w), box_h_(box_h) {
             x1_ = x0_ + box_w_;
             y1_ = y0_ + box_h_;
@@ -81,4 +78,4 @@ class TextField {
         std::vector<uint8_t> binary_data_;
 };
 
-#endif // HTTP_CLIENT_REQUEST_HPP_
+#endif  // HTTP_CLIENT_REQUEST_HPP_

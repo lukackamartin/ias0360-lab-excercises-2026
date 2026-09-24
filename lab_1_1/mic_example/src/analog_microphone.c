@@ -2,7 +2,7 @@
  * Copyright (c) 2021 Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
- * 
+ *
  */
 
 #include <stdlib.h>
@@ -49,7 +49,7 @@ int analog_microphone_init(const struct analog_microphone_config* config) {
         if (analog_mic.raw_buffer[i] == NULL) {
             analog_microphone_deinit();
 
-            return -1;   
+            return -1;
         }
     }
 
@@ -85,11 +85,11 @@ int analog_microphone_init(const struct analog_microphone_config* config) {
     adc_init();
     adc_select_input(config->gpio - 26);
     adc_fifo_setup(
-        true,    // Write each completed conversion to the sample FIFO
-        true,    // Enable DMA data request (DREQ)
+        true,    // write each completed conversion to the sample FIFO
+        true,    // enable DMA data request (DREQ)
         1,       // DREQ (and IRQ) asserted when at least 1 sample present
-        false,   // We won't see the ERR bit because of 8 bit reads; disable.
-        false    // Don't shift each sample to 8 bits when pushing to FIFO
+        false,   // we won't see the ERR bit because of 8 bit reads; disable
+        false    // don't shift each sample to 8 bits when pushing to FIFO
     );
 
     adc_set_clkdiv(clk_div);
@@ -132,11 +132,11 @@ int analog_microphone_start() {
         analog_mic.buffer_size
     );
 
-    adc_run(true); // start running the adc
+    adc_run(true);  // start running the adc
 }
 
 void analog_microphone_stop() {
-    adc_run(false); // stop running the adc
+    adc_run(false);  // stop running the adc
 
     dma_channel_abort(analog_mic.dma_channel);
 
@@ -150,20 +150,20 @@ void analog_microphone_stop() {
 }
 
 static void analog_dma_handler() {
-    // clear IRQ
+    // Clear IRQ
     if (analog_mic.dma_irq == DMA_IRQ_0) {
         dma_hw->ints0 = (1u << analog_mic.dma_channel);
     } else if (analog_mic.dma_irq == DMA_IRQ_1) {
         dma_hw->ints1 = (1u << analog_mic.dma_channel);
     }
 
-    // get the current buffer index
+    // Get the current buffer index
     analog_mic.raw_buffer_read_index = analog_mic.raw_buffer_write_index;
 
-    // get the next capture index to send the dma to start
+    // Get the next capture index to send the dma to start
     analog_mic.raw_buffer_write_index = (analog_mic.raw_buffer_write_index + 1) % ANALOG_RAW_BUFFER_COUNT;
 
-    // give the channel a new buffer to write to and re-trigger it
+    // Give the channel a new buffer to write to and re-trigger it
     dma_channel_transfer_to_buffer_now(
         analog_mic.dma_channel,
         analog_mic.raw_buffer[analog_mic.raw_buffer_write_index],

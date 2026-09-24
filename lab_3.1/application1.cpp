@@ -1,6 +1,6 @@
-#include <cmath> 
+#include <cmath>
 #include<iostream>
-#include <cstdlib> 
+#include <cstdlib>
 #include <iostream>
 #include <stdio.h>
 
@@ -16,14 +16,14 @@ extern "C" {
 #include "LCD_app.h"
 #include "context.h"
 
-// run core0 loop that displays UI and handle user interaction
+// Run core0 loop that displays UI and handle user interaction
 void core1_entry() {
     while(true) {
         TP_DrawBoard();
     }
 }
 
-int main(void) 
+int main(void)
 {
     System_Init();
 
@@ -32,14 +32,14 @@ int main(void)
 	LCD_SCAN_DIR  lcd_scan_dir = SCAN_DIR_DFT;
 	LCD_screen_init(lcd_scan_dir, "Application 1");
 
-    // run core1 loop that handles user interface
+    // Run core1 loop that handles user interface
     multicore_launch_core1(core1_entry);
-    
+
     while (true) {
         // Block the process until data being filled
         uint32_t g = multicore_fifo_pop_blocking();
         if (g == CORE1_EXIT_FLAG) {
-            break;  // Exit the loop if the exit flag is received
+            break;  // exit the loop if the exit flag is received
         }
     }
 

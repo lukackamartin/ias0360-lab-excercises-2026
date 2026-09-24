@@ -10,10 +10,10 @@ project(pico_tflite_inference_test C CXX ASM)
 pico_sdk_init()
 
 
-add_executable(main main.cpp) # main function to run (LCD touchscreen -- optional, needs the LCD hardware).
-add_executable(main_arena_size_test arena_size_test.cpp) # to check arena size for a given model.
-add_executable(main_inference_test inference_test.cpp) # to test hand written digit recognition with static test data.
-add_executable(main_uart_inference uart_inference.cpp) # send a 784-pixel image over USB-serial/UART, get a prediction back -- no LCD required.
+add_executable(main main.cpp) # main function to run (LCD touchscreen -- optional, needs the LCD hardware)
+add_executable(main_arena_size_test arena_size_test.cpp) # to check arena size for a given model
+add_executable(main_inference_test inference_test.cpp) # to test hand written digit recognition with static test data
+add_executable(main_uart_inference uart_inference.cpp) # send a 784-pixel image over USB-serial/UART, get a prediction back -- no LCD required
 
 target_include_directories(main
   PRIVATE
@@ -88,42 +88,42 @@ include_directories(./lib/lcd)
 include_directories(./lib/font)
 
 target_link_libraries(
-  main 
+  main
   src
-  lcd 
-  font 
+  lcd
+  font
   config
   models
   pico_stdlib
-  hardware_spi 
-  hardware_pwm 
-  pico_multicore 
+  hardware_spi
+  hardware_pwm
+  pico_multicore
   hardware_adc
   pico-tflmicro
 )
 
 target_link_libraries(
-  main_arena_size_test 
+  main_arena_size_test
   src
   config
   models
   pico_stdlib
-  hardware_spi 
-  hardware_pwm 
-  pico_multicore 
+  hardware_spi
+  hardware_pwm
+  pico_multicore
   hardware_adc
   pico-tflmicro
 )
 
 target_link_libraries(
-  main_inference_test 
+  main_inference_test
   src
   config
   models
   pico_stdlib
-  hardware_spi 
-  hardware_pwm 
-  pico_multicore 
+  hardware_spi
+  hardware_pwm
+  pico_multicore
   hardware_adc
   pico-tflmicro
 )
@@ -134,9 +134,9 @@ target_link_libraries(
   config
   models
   pico_stdlib
-  hardware_spi 
-  hardware_pwm 
-  pico_multicore 
+  hardware_spi
+  hardware_pwm
+  pico_multicore
   hardware_adc
   pico-tflmicro
 )

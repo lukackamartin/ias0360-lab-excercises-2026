@@ -16,7 +16,6 @@
 #define END_REQUEST_FLAG  0xFFFFFFFF
 #define EXIT_PROGRAM_FLAG 0xDEADDEAD
 
-
 // TODO: Set your Wi-Fi SSID and password here
 const char WIFI_SSID[] = "your_wifi_ssid";
 const char WIFI_PASSWORD[] = "your_wifi_password";
@@ -30,5 +29,4 @@ typedef struct {
     uint8_t data[REQUEST_CHUNK_SIZE];  // fixed-size chunk for simplicity
 } OCR_Packet;
 
-
-#endif // MAIN_H
+#endif  // MAIN_H

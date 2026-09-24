@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <vector>
-#include <cstring> 
+#include <cstring>
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
@@ -14,7 +14,7 @@ extern "C" {
 #include "LCD_app.h"
 #include "context.h"
 
-// run core0 loop that displays UI and handle user interaction
+// Run core0 loop that displays UI and handle user interaction
 void core1_entry() {
     while(true) {
         TP_DrawBoard();
@@ -30,13 +30,13 @@ int main(void)
 	LCD_SCAN_DIR  lcd_scan_dir = SCAN_DIR_DFT;
 	LCD_screen_init(lcd_scan_dir, "Application 2");
 
-    // run core1 loop that handles user interface
+    // Run core1 loop that handles user interface
     multicore_launch_core1(core1_entry);
 
 	while(1) {
         uint32_t g = multicore_fifo_pop_blocking();
         if (g == CORE1_EXIT_FLAG) {
-            break;  // Exit the loop if the exit flag is received
+            break;  // exit the loop if the exit flag is received
         }
 	}
 

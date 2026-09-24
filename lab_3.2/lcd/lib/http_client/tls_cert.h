@@ -52,5 +52,4 @@ static const uint8_t CA_ISRG_ROOT_X1_PEM[] =
 "-----END CERTIFICATE-----\n"
 ;
 
-
 #endif

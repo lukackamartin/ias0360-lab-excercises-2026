@@ -44,7 +44,7 @@ static sd_card_t *g_sd = NULL;      // active SD card
 static const char *g_drive = NULL;  // typically "0:"
 
 static void join_path(char *out, size_t out_sz, const char *drive, const char *rel) {
-    // drive = "0:" or "0:/", ensure exactly one slash when joining
+    // Drive = "0:" or "0:/", ensure exactly one slash when joining
     if (rel && rel[0] == '/') rel++;  // avoid double slashes
     if (drive && drive[strlen(drive) - 1] == '/')
         snprintf(out, out_sz, "%s%s", drive, rel ? rel : "");
@@ -307,7 +307,6 @@ void core1_entry() {
         }
     }
 }
-
 
 int main(void) {
 

@@ -11,7 +11,6 @@ static Button* switch_app_button;
 static TP_DEV sTP_DEV;
 static TP_DRAW sTP_Draw;
 
-
 void reset_display(char* app_name) {
     LCD_Clear(LCD_BACKGROUND);
 
@@ -19,7 +18,6 @@ void reset_display(char* app_name) {
 
     switch_app_button->draw();
 }
-
 
 void on_switch_app_button_pressed(void)
 {
@@ -37,16 +35,15 @@ void TP_DrawBoard(void)
 {
     TP_Scan(0);
     if (sTP_DEV.chStatus & TP_PRESS_DOWN)
-    { 
+    {
         sTP_Draw.Color = BLACK;
         if (switch_app_button->is_pressed(sTP_Draw.Xpoint, sTP_Draw.Ypoint))
-        { 
+        {
             printf("Switch app button pressed\n");
             switch_app_button->call_cb();
         }
     }
 }
-
 
 void LCD_screen_init(LCD_SCAN_DIR lcd_scan_dir, char* title)
 {

@@ -15,7 +15,6 @@
 
 #define CORE1_EXIT_FLAG 0xDEADBEEF
 
-
 void LCD_screen_init(LCD_SCAN_DIR lcd_scan_dir, char* title);
 void TP_DrawBoard(void);
 

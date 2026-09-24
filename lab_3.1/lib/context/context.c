@@ -19,8 +19,8 @@ void jump_to_image(uint32_t offset)
     *(volatile uint32_t *)(PPB_BASE + M0PLUS_SYST_CVR_OFFSET) = 0;
     // Clear & disable NVIC interrupts
     for (int i = 0; i < 8; ++i) {
-        *(volatile uint32_t *)(PPB_BASE + M0PLUS_NVIC_ICER_OFFSET + i*4) = 0xFFFFFFFFu;
-        *(volatile uint32_t *)(PPB_BASE + M0PLUS_NVIC_ICPR_OFFSET + i*4) = 0xFFFFFFFFu;
+        *(volatile uint32_t *)(PPB_BASE + M0PLUS_NVIC_ICER_OFFSET + i * 4) = 0xFFFFFFFFu;
+        *(volatile uint32_t *)(PPB_BASE + M0PLUS_NVIC_ICPR_OFFSET + i * 4) = 0xFFFFFFFFu;
     }
     const uint32_t *vt = (const uint32_t *)app_base;
     uint32_t msp   = vt[0];

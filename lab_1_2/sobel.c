@@ -12,7 +12,7 @@ static inline char to_ascii(uint8_t v) {
 
 // out[y*w + x] = clamp( sqrt(gx^2 + gy^2), 0..255 )
 static void sobel3x3_u8(const uint8_t* img, int w, int h, uint8_t* out) {
-    // zero borders
+    // Zero borders
     for (int x = 0; x < w; x++) { out[x] = 0; out[(h-1)*w + x] = 0; }
     for (int y = 0; y < h; y++) { out[y*w] = 0; out[y*w + (w-1)] = 0; }
 
@@ -57,12 +57,12 @@ int main(void) {
     printf("(.: low, +: mid, #: high)\n\n");
 
     for (int y = 0; y < H; y++) {
-        // original
+        // Original
         for (int x = 0; x < W; x++) {
             putchar(to_ascii(img[y*W + x]));
         }
         printf("   |   ");
-        // sobel
+        // Sobel
         for (int x = 0; x < W; x++) {
             putchar(to_ascii(edges[y*W + x]));
         }

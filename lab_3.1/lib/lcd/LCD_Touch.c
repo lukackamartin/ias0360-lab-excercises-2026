@@ -1,6 +1,6 @@
 #include "LCD_Touch.h"
 #include <stdlib.h>
-#include <string.h>  
+#include <string.h>
 #include <stdio.h>
 
 TP_DEV* pTP_DEV;
@@ -21,11 +21,10 @@ static void TP_DumpBitmapToSerial(int h, int w, const uint8_t bmp[h][w])
     }
 }
 
-
-#define TP_CMD_X              0xD0  // Differential X position
-#define TP_CMD_Y              0x90  // Differential Y position
-#define TP_CMD_Z1             0xB0  // Differential Z1 touch pressure
-#define TP_CMD_Z2             0xC0  // Differential Z2 touch pressure
+#define TP_CMD_X              0xD0  // differential X position
+#define TP_CMD_Y              0x90  // differential Y position
+#define TP_CMD_Z1             0xB0  // differential Z1 touch pressure
+#define TP_CMD_Z2             0xC0  // differential Z2 touch pressure
 
 #define TP_TOUCH_SPI_BAUDRATE 1000000                  // 1.0 MHz for settling SAR ADC
 #define TP_LCD_SPI_BAUDRATE   (125 * 1000 * 1000 / 6)  // 20.833 MHz for ILI9488
@@ -33,10 +32,10 @@ static void TP_DumpBitmapToSerial(int h, int w, const uint8_t bmp[h][w])
 #define TP_ADC_VALID_MIN      80
 #define TP_ADC_VALID_MAX      4015
 #define TP_SAMPLES_COUNT      5
-#define TP_ERR_RANGE          30    // Cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
-#define TP_Z1_MIN             90    // Minimum Z1 ADC count for physical contact
+#define TP_ERR_RANGE          30    // cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
+#define TP_Z1_MIN             90    // minimum Z1 ADC count for physical contact
 #define TP_X_PLATE_OHMS       400   // Waveshare panel sheet resistance in Ohms (Device Tree specification)
-#define TP_R_TOUCH_MAX        1500  // Maximum physical contact resistance in Ohms (Linux ti,pressure-max)
+#define TP_R_TOUCH_MAX        1500  // maximum physical contact resistance in Ohms (Linux ti,pressure-max)
 
 static uint8_t sTP_PenDownCount = 0;
 
@@ -192,7 +191,7 @@ uint8_t TP_Scan(uint8_t chCoordType)
 {
     // In X, Y coordinate measurement, IRQ is disabled and output is low
     if (!DEV_Digital_Read(TP_IRQ_PIN))
-    {  // Press the button to press
+    {  // press the button to press
         // Read the physical coordinates
         if (chCoordType)
         {
@@ -215,7 +214,7 @@ uint8_t TP_Scan(uint8_t chCoordType)
             {
                 //DEBUG("(Xad,Yad) = %d,%d\r\n",pTP_DEV->Xpoint,pTP_DEV->Ypoint);
                 if (pTP_DEV->TP_Scan_Dir == R2L_D2U)
-                {  // Converts the result to screen coordinates
+                {  // converts the result to screen coordinates
                     pTP_Draw->Xpoint = pTP_DEV->fXfac * pTP_DEV->Xpoint +
                                       pTP_DEV->iXoff;
                     pTP_Draw->Ypoint = pTP_DEV->fYfac * pTP_DEV->Ypoint +
@@ -250,7 +249,7 @@ uint8_t TP_Scan(uint8_t chCoordType)
             }
         }
         if (0 == (pTP_DEV->chStatus & TP_PRESS_DOWN))
-        {  // Not being pressed
+        {  // not being pressed
             if (++sTP_PenDownCount >= 2)
             {
                 pTP_DEV->chStatus = TP_PRESS_DOWN | TP_PRESSED;
@@ -327,7 +326,6 @@ void TP_GetAdFac(void)
     }
 }
 
-
 static int count_digits(int number)
 {
     if (number == 0)
@@ -357,7 +355,7 @@ void TP_display_input(int h, int w, const uint8_t* src)
     }
 }
 
-void TP_DrawHeader(char* app_name) 
+void TP_DrawHeader(char* app_name)
 {
     GUI_DisString_EN(130, 20, "WELCOME TO", &Font24, WHITE, BLACK);
     GUI_DisString_EN(120, 45, app_name, &Font24, WHITE, BLACK);

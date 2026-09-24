@@ -17,7 +17,7 @@ static void dma_irq_handler(const uint DMA_IRQ_num, io_rw_32 *dma_hw_ints_p) {
         }
         // Is this channel requesting interrupt?
         if (irq_num == DMA_IRQ_num && (*dma_hw_ints_p & (1 << channel))) {
-            *dma_hw_ints_p = 1 << channel;  // Clear it.
+            *dma_hw_ints_p = 1 << channel;  // Clear it
             if (SD_IF_SDIO == sd_card_p->type) {
                 sdio_irq_handler(sd_card_p);
             }
@@ -31,7 +31,7 @@ static void __not_in_flash_func(dma_irq_handler_1)() {
     dma_irq_handler(DMA_IRQ_1, &dma_hw->ints1);
 }
 
-/* Adding the interrupt request handler 
+/* Adding the interrupt request handler
     Only add it once.
     Otherwise, space is wasted in irq_add_shared_handler's table.
     Also, each core maintains its own table of interrupt vectors,
@@ -60,7 +60,7 @@ static void mark_handler_added(const uint num) {
     myASSERT(i < count_of(ih_added_recs));
 }
 void dma_irq_add_handler(const uint num, bool exclusive) {
-    if (!is_handler_added(num)) {        
+    if (!is_handler_added(num)) {
         static void (*irq_handler)();
         switch (num) {
             case DMA_IRQ_0:
@@ -79,7 +79,7 @@ void dma_irq_add_handler(const uint num, bool exclusive) {
                 num, *irq_handler,
                 PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
         }
-        irq_set_enabled(num, true); // Enable IRQ in NVIC
+        irq_set_enabled(num, true);  // Enable IRQ in NVIC
         mark_handler_added(num);
     }
 }

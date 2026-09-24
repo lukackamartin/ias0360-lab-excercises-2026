@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "pico/stdlib.h"
 
-
 static inline float clampf(float v, float lo, float hi) {
     return (v < lo) ? lo : (v > hi) ? hi : v;
 }
@@ -12,7 +11,7 @@ static inline float clampf(float v, float lo, float hi) {
 static void quantize_q15(const float* x, int n, int16_t* y, int* clip_count) {
     int clips = 0;
     for (int i = 0; i < n; i++) {
-        float s = clampf(x[i], -0.999969f, 0.999969f); // avoid +1.0 overflow
+        float s = clampf(x[i], -0.999969f, 0.999969f);  // avoid +1.0 overflow
         if (s != x[i]) clips++;
         int32_t q = (int32_t)lrintf(s * 32768.0f);     // round to nearest
         if (q >  32767) q =  32767;
@@ -48,7 +47,7 @@ static void snr_and_error(const float* ref, const float* test, int n,
 
 int main(void) {
     stdio_init_all();
-    sleep_ms(1500); 
+    sleep_ms(1500);
 
     // ---- Settings ----
     const float fs_hz = 2200.0f;   // your IMU sample rate
@@ -75,7 +74,7 @@ int main(void) {
     // ---- Size & throughput math ----
     const int bytes_f32 = sizeof(float) * N;     // 4 bytes/sample
     const int bytes_q15 = sizeof(int16_t) * N;   // 2 bytes/sample
-    const float bps_f32 = (float)(axes * 4) * fs_hz; // bytes/s for 3 axes
+    const float bps_f32 = (float)(axes * 4) * fs_hz;  // bytes/s for 3 axes
     const float bps_q15 = (float)(axes * 2) * fs_hz;
 
     // ---- Fidelity (SNR, errors) ----
@@ -101,5 +100,3 @@ int main(void) {
     while (true) tight_loop_contents();
     return 0;
 }
-
-

@@ -1,13 +1,12 @@
 #include "LCD_Touch.h"
 #include <stdlib.h>
-#include <string.h>  
+#include <string.h>
 #include <stdio.h>
 
 extern LCD_DIS sLCD_DIS;
 extern uint8_t id;
 static TP_DEV sTP_DEV;
 static TP_DRAW sTP_Draw;
-
 
 // ---- Capture area (the black box) ------------------------------------------
 #define BOX_X0 100
@@ -52,10 +51,10 @@ static void TP_DumpBitmapToSerial(const uint8_t bmp[BOX_H][BOX_W])
     }
 }
 
-#define TP_CMD_X              0xD0  // Differential X position
-#define TP_CMD_Y              0x90  // Differential Y position
-#define TP_CMD_Z1             0xB0  // Differential Z1 touch pressure
-#define TP_CMD_Z2             0xC0  // Differential Z2 touch pressure
+#define TP_CMD_X              0xD0  // differential X position
+#define TP_CMD_Y              0x90  // differential Y position
+#define TP_CMD_Z1             0xB0  // differential Z1 touch pressure
+#define TP_CMD_Z2             0xC0  // differential Z2 touch pressure
 
 #define TP_TOUCH_SPI_BAUDRATE 1000000                  // 1.0 MHz for settling SAR ADC
 #define TP_LCD_SPI_BAUDRATE   (125 * 1000 * 1000 / 6)  // 20.833 MHz for ILI9488
@@ -63,14 +62,14 @@ static void TP_DumpBitmapToSerial(const uint8_t bmp[BOX_H][BOX_W])
 #define TP_ADC_VALID_MIN      80
 #define TP_ADC_VALID_MAX      4015
 #define TP_SAMPLES_COUNT      5
-#define TP_ERR_RANGE          30    // Cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
-#define TP_Z1_MIN             90    // Minimum Z1 ADC count for physical contact
+#define TP_ERR_RANGE          30    // cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
+#define TP_Z1_MIN             90    // minimum Z1 ADC count for physical contact
 #define TP_X_PLATE_OHMS       400   // Waveshare panel sheet resistance in Ohms (Device Tree specification)
-#define TP_R_TOUCH_MAX        1500  // Maximum physical contact resistance in Ohms (Linux ti,pressure-max)
+#define TP_R_TOUCH_MAX        1500  // maximum physical contact resistance in Ohms (Linux ti,pressure-max)
 #define TP_SCREEN_MARGIN      20
 #define TP_POINT_JITTER       2
 #define TP_POINT_SMOOTH_RANGE 30
-#define TP_MAX_STROKE_STEP    35    // Maximum plausible pixel movement per poll interval
+#define TP_MAX_STROKE_STEP    35    // maximum plausible pixel movement per poll interval
 #define TP_MAX_STROKE_STEP_SQ (TP_MAX_STROKE_STEP * TP_MAX_STROKE_STEP)
 
 static bool sTP_DrawValid = false;
@@ -561,7 +560,6 @@ void TP_GetAdFac(void)
     }
 }
 
-
 void TP_Dialog(void)
 {
     LCD_Clear(LCD_BACKGROUND);
@@ -604,16 +602,15 @@ void TP_Save(void)
     TP_DumpBitmapToSerial(sSavedBitmap);
 }
 
-
 void TP_DrawBoard(void)
 {
     TP_Scan(0);
     if (sTP_DEV.chStatus & TP_PRESS_DOWN)
-    { 
+    {
         if (sTP_Draw.Xpoint >= (sLCD_DIS.LCD_Dis_Column - 60) &&
             sTP_Draw.Xpoint < sLCD_DIS.LCD_Dis_Column &&
             sTP_Draw.Ypoint < 24)
-        { 
+        {
             TP_Reset_Draw_Filter();
             TP_Dialog();
             uint16_t release_timeout = 0;
@@ -627,7 +624,7 @@ void TP_DrawBoard(void)
         else if (sTP_Draw.Xpoint >= (sLCD_DIS.LCD_Dis_Column - 120) &&
                  sTP_Draw.Xpoint < (sLCD_DIS.LCD_Dis_Column - 60) &&
                  sTP_Draw.Ypoint < 24)
-        { 
+        {
             TP_Reset_Draw_Filter();
             TP_Save();
             uint16_t release_timeout = 0;

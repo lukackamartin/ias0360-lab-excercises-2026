@@ -14,7 +14,6 @@ extern "C" {
 #include "pico/float.h"
 #include "pico/multicore.h"
 
-
 #define TP_PRESS_DOWN           0x80
 #define TP_PRESSED              0x40
 
@@ -23,15 +22,14 @@ extern "C" {
 #define TASK_COMPLETE_FLAG      0xDEADBEAF
 #define SD_UNAVAILABLE_FLAG     0xBADCA4D0
 
-
 // ---- Capture area (the black box) ------------------------------------------
 #define BOX_X0 100
 #define BOX_Y0 50
-#define BOX_X1 380   // right  edge (exclusive in our math)
-#define BOX_Y1 290   // bottom edge (exclusive in our math)
+#define BOX_X1 380  // right  edge (exclusive in our math)
+#define BOX_Y1 290  // bottom edge (exclusive in our math)
 
-#define BOX_W (BOX_X1 - BOX_X0)   // 280
-#define BOX_H (BOX_Y1 - BOX_Y0)   // 240
+#define BOX_W (BOX_X1 - BOX_X0)  // 280
+#define BOX_H (BOX_Y1 - BOX_Y0)  // 240
 
 // Touch screen structure
 typedef struct {
@@ -47,7 +45,7 @@ typedef struct {
 	float fXfac;
 	float fYfac;
 	// Select the coordinates of the XPT2046 touch
-	// screen relative to what scan direction
+	// Screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
@@ -56,7 +54,7 @@ typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
 	COLOR Color;
-	DOT_PIXEL DotPixel; 
+	DOT_PIXEL DotPixel;
 }TP_DRAW;
 
 typedef struct {

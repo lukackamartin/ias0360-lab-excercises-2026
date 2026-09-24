@@ -6,7 +6,7 @@
 #include <sstream>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring> 
+#include <cstring>
 
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
@@ -21,16 +21,15 @@ static void post_err(void *arg, err_t err) {
     if (st) { st->result = err ? err : -1; st->complete = true; }
 }
 
-
 static err_t post_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err) {
     PostState *st = (PostState*)arg;
     if (!st) { if (p) pbuf_free(p); return ERR_OK; }
     if (err != ERR_OK) { if (p) pbuf_free(p); st->result = err; st->complete = true; return err; }
-    if (!p) { // FIN
+    if (!p) {  // FIN
         st->complete = true;
         return ERR_OK;
     }
-    // accumulate
+    // Accumulate
     u16_t to_copy = p->tot_len;
     size_t space = sizeof(st->resp->body) - st->resp->len - 1;
     if (space > 0) {
@@ -52,7 +51,7 @@ static void dns_found_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
         st->addr = *ipaddr;
         st->resolved = true;
     } else {
-        st->resolved = true; // but addr remains zero
+        st->resolved = true;  // but addr remains zero
         st->result = -1;
     }
 }
@@ -69,9 +68,9 @@ static err_t post_connected(void *arg, struct altcp_pcb *pcb, err_t err) {
                         "Content-Type: %s\r\n"
                         "Content-Length: %u\r\n"
                         "Connection: close\r\n\r\n",
-                        st->url, 
-                        st->host, 
-                        st->ctype ? st->ctype : "application/octet-stream", 
+                        st->url,
+                        st->host,
+                        st->ctype ? st->ctype : "application/octet-stream",
                         (unsigned)st->body_len);
 
     if (n <= 0) { st->result = -1; st->complete = true; return ERR_VAL; }
@@ -132,7 +131,6 @@ static err_t post_send_next_chunk(struct altcp_pcb *pcb, PostState *st) {
 
     return ERR_OK;
 }
-
 
 static err_t post_sent_cb(void *arg, struct altcp_pcb *pcb, u16_t acked) {
     PostState *st = (PostState*)arg;
@@ -209,7 +207,6 @@ static err_t post_connected_by_chunk(void *arg, struct altcp_pcb *pcb, err_t err
     return ERR_OK;
 }
 
-
 static err_t get_connected(void *arg, struct altcp_pcb *pcb, err_t err) {
     PostState *st = (PostState*)arg;
     if (err != ERR_OK) { st->result = err; st->complete = true; return err; }
@@ -244,7 +241,7 @@ HttpRequest::HttpRequest(const std::string& url)
     st_.resp     = &ctx_;
     st_.resp->len = 0;
     st_.resp->body[0] = '\0';
-    
+
     st_.body     = nullptr;
     st_.body_len = 0;
 
@@ -360,7 +357,7 @@ void HttpRequest::parse_response_data(const char *json, size_t len, ResponseData
 
     const char *start = strchr(colon, '"');
     if (!start) return;
-    start++; // move past the quote
+    start++;  // move past the quote
 
     const char *end = strchr(start, '"');
     if (!end) return;
@@ -369,7 +366,7 @@ void HttpRequest::parse_response_data(const char *json, size_t len, ResponseData
     printf("Parsed string value length: %zu\n", value_len);
     if (value_len == 0) return;
 
-    // allocate memory for string + null terminator
+    // Allocate memory for string + null terminator
     char *buf = (char *)malloc(value_len + 1);
     if (!buf) return;
 
@@ -380,7 +377,6 @@ void HttpRequest::parse_response_data(const char *json, size_t len, ResponseData
     out->status_ok = true;
     return;
 }
-
 
 void HttpRequest::set_dummy_mnist_data() {
     body_.clear();
@@ -394,7 +390,6 @@ void HttpRequest::set_dummy_mnist_data() {
 void HttpRequest::set_dummy_image_data() { set_dummy_mnist_data(); }
 
 void HttpRequest::set_dummy_imu_data() { set_dummy_mnist_data(); }
-
 
 ResponseDataStr HttpRequest::get() {
     // Implement GET request logic
@@ -419,7 +414,7 @@ ResponseDataStr HttpRequest::get() {
 
     st_.pcb = altcp_new_ip_type(NULL, IPADDR_TYPE_ANY);
     if (!st_.pcb) return data;
-    
+
     altcp_arg(st_.pcb, &st_);
     altcp_err(st_.pcb, post_err);
     altcp_recv(st_.pcb, post_recv);
@@ -456,7 +451,6 @@ ResponseDataStr HttpRequest::get() {
     parse_response_data(st_.resp->body, st_.resp->len, &data);
     return data;
 }
-
 
 ResponseDataStr HttpRequest::post() {
 
@@ -517,7 +511,7 @@ ResponseDataStr HttpRequest::post() {
         if (st_.resp && st_.resp->len) printf("Partial data:\n%.*s\n", (int)st_.resp->len, st_.resp->body);
         return data;
     }
-    
+
     parse_response_data(st_.resp->body, st_.resp->len, &data);
     return data;
 }
@@ -591,7 +585,6 @@ err_t HttpRequest::set_request_header(size_t total_size, const char* content_typ
     altcp_sent(st_.pcb, post_sent_cb);
     altcp_poll(st_.pcb, post_poll_cb, 8);
     altcp_recv(st_.pcb, post_recv);
-    
 
     printf("Connecting to %s:%d...\n", st_.host, st_.port);
     err_t ce = altcp_connect(st_.pcb, &st_.addr, st_.port, post_connected_stream);
@@ -600,7 +593,7 @@ err_t HttpRequest::set_request_header(size_t total_size, const char* content_typ
         reset_pcb();
         return ce;
     }
-    
+
     printf("Connection established and header sent\n");
     return ERR_OK;
 }
@@ -647,7 +640,6 @@ err_t HttpRequest::post_chunked(size_t total_size, const char* chunk_data, size_
     async_context_wait_for_work_ms(this->ctx, 20);
     return ERR_OK;
 }
-
 
 ResponseDataStr HttpRequest::retrieve_data(void) {
     ResponseDataStr data{};

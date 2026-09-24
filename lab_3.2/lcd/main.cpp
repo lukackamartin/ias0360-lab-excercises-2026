@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <vector>
-#include <cstring> 
+#include <cstring>
 #include <sstream>
 
 #include "pico/sync.h"
@@ -18,12 +18,11 @@
 #include "sd_card_wrapper.hpp"
 
 static inline void debug_unpause_timer(void) {
-    timer_hw->dbgpause = 0; 
+    timer_hw->dbgpause = 0;
 }
 
 volatile OCR_Packet g_ocr_packet;
 mutex_t mutex;
-
 
 int init_wifi_connection(void) {
 
@@ -72,7 +71,6 @@ int post_request_with_mnist_data(void) {
     return 0;
 }
 
-
 // Send a POST request with chunked body
 int post_request_with_chunked_body(void) {
 
@@ -116,7 +114,7 @@ int post_request_with_chunked_body(void) {
             printf("Chunk send failed at element offset %zu.\n", offset);
             return ERR_VAL;
         }
-        
+
         if (packet_index == total_packets_count - 1) {
             // After sending all the packets, we can process the response
             printf("Sent last packet %d/%d\n", packet_index + 1, total_packets_count);
@@ -142,7 +140,6 @@ int post_request_with_chunked_body(void) {
     return 0;
 }
 
-
 // ------ SD Card write function ------ //
 void write_data_to_sd_card(void) {
     // Save large data to SD card for later use
@@ -153,23 +150,23 @@ void write_data_to_sd_card(void) {
         while (1) tight_loop_contents();
     }
 
-    // filename to store large request data
+    // Filename to store large request data
     size_t offset = 0;
     size_t total_packets_count = (DATA_SIZE + REQUEST_CHUNK_SIZE - 1) / REQUEST_CHUNK_SIZE;
 
-    // create a file in SD card
+    // Create a file in SD card
     if (!sd_card.createFile(SD_CARD_FILENAME)) {
         printf("Failed to create file on SD card\n");
         while (1) tight_loop_contents();
     }
 
-    // erase the content if any
+    // Erase the content if any
     if (!sd_card.clearFile(SD_CARD_FILENAME)) {
         printf("Failed to clear existing file content on SD card\n");
         while (1) tight_loop_contents();
     }
 
-    // write data in chunks
+    // Write data in chunks
     bool success = true;
     while (offset < DATA_SIZE) {
         size_t remaining = DATA_SIZE - offset;
@@ -180,7 +177,7 @@ void write_data_to_sd_card(void) {
             success = false;
             break;
         }
-        
+
         offset += chunk_elems;
     }
     if (!success) {
@@ -226,7 +223,7 @@ int prior_post_request_with_chunked_body_from_sd_card(void) {
 
 // ------ SD Card read and POST request function ------ //
 void read_data_from_sd_card(void) {
-    
+
     printf("[Publisher] initializing SD card for reading data...\n");
     SD_CardWrapper sd_card;
     printf("[Publisher] SD card wrapper initialized.\n");
@@ -236,7 +233,7 @@ void read_data_from_sd_card(void) {
     }
     printf("[Publisher] SD card mounted successfully for reading data.\n");
 
-    // get total file size from SD card
+    // Get total file size from SD card
     size_t file_size = sd_card.getFileSize(SD_CARD_FILENAME);
     printf("[Publisher] Reading file of size: %zu bytes\n", file_size);
 
@@ -251,7 +248,7 @@ void read_data_from_sd_card(void) {
         stored_data.clear();
         stored_data.resize(chunk_elems);
 
-        // read chunked data from SD card
+        // Read chunked data from SD card
         if (!sd_card.readChunkedFile(SD_CARD_FILENAME, stored_data, chunk_elems, offset)) {
             printf("Failed to read data chunk from SD card\n");
             break;
@@ -265,8 +262,7 @@ void read_data_from_sd_card(void) {
         g_ocr_packet.data_len = stored_data.size();
         mutex_exit(&mutex);
 
-
-        // enqueue data to be sent in POST request
+        // Enqueue data to be sent in POST request
         multicore_fifo_push_blocking(PACKET_READY_FLAG);
         printf("[Publisher] Read packet index %d/%d bytes from SD card\n", packet_index, total_packets_count);
 
@@ -280,19 +276,18 @@ void read_data_from_sd_card(void) {
         printf("Core 0 got ack from the main Core.\n");
         printf("Processing the next chunk...\n");
     }
-    
+
     multicore_fifo_push_blocking(END_REQUEST_FLAG);  // indicate end of request
     printf("Data read from SD card complete.\n");
     while (1) tight_loop_contents();
 }
 
-
 int post_request_with_chunked_body_from_sd_card(void) {
 
     printf("[Subscriber] Sending POST request with chunked body from SD card...\n");
-    
+
     mutex_init(&mutex);
-    
+
     // Set URL
     const char* post_url = "/api/v1/test_large_request";
     HttpRequest request(post_url);
@@ -306,7 +301,7 @@ int post_request_with_chunked_body_from_sd_card(void) {
             printf("[Subscriber] All data chunks sent from SD card.\n");
             break;
         }
-        
+
         // Copy data to shared buffer
         mutex_enter_blocking(&mutex);
         std::ostringstream chunk_stream;
@@ -370,19 +365,17 @@ int main(void)
     }
 
     // Check WiFi POST request with MNIST data
-    return post_request_with_mnist_data();        // Send MINIST POST request
-
+    return post_request_with_mnist_data();        // send MINIST POST request
 
     // Check WiFi POST request with chunked body stored in memory
-    //return post_request_with_chunked_body();    // Send POST request with chunked body
-    
+    // return post_request_with_chunked_body();    // Send POST request with chunked body
 
     // Check WiFi POST request with chunked body stored in SD card
     // Before sending the POST request, first write data to SD card
 
     // Write text data to SD card
-    //return prior_post_request_with_chunked_body_from_sd_card();
+    // return prior_post_request_with_chunked_body_from_sd_card();
 
     // Then send POST request with chunked body read from SD card
-    //return post_request_with_chunked_body_from_sd_card();
+    // return post_request_with_chunked_body_from_sd_card();
 }

@@ -2,8 +2,8 @@
 #define CONTEXT_H
 
 #define CONTEXT_SWITCHER_OFFSET 0x100u
-#define APP1_OFFSET xxxx // Define the offset for Application 1
-#define APP2_OFFSET yyyy // Define the offset for Application 2
+#define APP1_OFFSET xxxx  // define the offset for Application 1
+#define APP2_OFFSET yyyy  // define the offset for Application 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,4 +21,4 @@ void jump_to_image(uint32_t offset);
 }
 #endif
 
-#endif // CONTEXT_H
+#endif  // CONTEXT_H
