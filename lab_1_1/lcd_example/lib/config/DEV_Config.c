@@ -44,14 +44,15 @@ void DEV_GPIO_Init(void)
     DEV_GPIO_Mode(LCD_CS_PIN, GPIO_OUT);
     DEV_GPIO_Mode(TP_CS_PIN,GPIO_OUT);
     DEV_GPIO_Mode(TP_IRQ_PIN,GPIO_IN);
-    DEV_GPIO_Mode(SD_CS_PIN,GPIO_OUT);
+    // MicroSD socket is connected via 4-bit SDIO (GP5, GP18..GP22).
+    // GP22 is SD_D3; host pull-up per SD Spec 4.3.13 for SD mode entry.
+    gpio_pull_up(SD_CS_PIN);   // DAT3/CD host pull-up per SD spec 4.3.13
 	//gpio_set_pulls(TP_IRQ_PIN,true,false);
 
     DEV_Digital_Write(TP_CS_PIN, 1);
     DEV_Digital_Write(LCD_CS_PIN, 1);
     //DEV_Digital_Write(LCD_BKL_PIN, 0);
 	
-    DEV_Digital_Write(SD_CS_PIN, 1);
 
 	gpio_set_function(LCD_BKL_PIN, GPIO_FUNC_PWM);
 }
