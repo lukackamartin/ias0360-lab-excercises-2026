@@ -13,9 +13,13 @@
 ******************************************************************************/
 #include "LCD_Touch.h"
 
+#include <stdlib.h>
+#include <string.h>
 #include "pico/multicore.h"
 #include "pico/sync.h"
 #include "DEV_Config.h"
+
+void set_box_content(void);
 
 extern LCD_DIS sLCD_DIS;
 extern uint8_t id;
@@ -31,128 +35,159 @@ static INFERENCE* inference;
 static uint32_t last_login_button_touch_time = 0;
 
 
-/*******************************************************************************
-function:
-		Read the ADC of the channel
-parameter:
-	Channel_Cmd :	0x90: Read channel Y +, select the ADC resolution is 12 bits, set to differential mode
-					0xd0: Read channel x +, select the ADC resolution is 12 bits, set to differential mode
-*******************************************************************************/
-static uint16_t TP_Read_ADC(uint8_t CMD)
+#define TP_CMD_X              0xD0  // Differential X position
+#define TP_CMD_Y              0x90  // Differential Y position
+#define TP_CMD_Z1             0xB0  // Differential Z1 touch pressure
+#define TP_CMD_Z2             0xC0  // Differential Z2 touch pressure
+
+#define TP_TOUCH_SPI_BAUDRATE 1000000                  // 1.0 MHz for settling SAR ADC
+#define TP_LCD_SPI_BAUDRATE   (125 * 1000 * 1000 / 6)  // 20.833 MHz for ILI9488
+
+#define TP_ADC_VALID_MIN      80
+#define TP_ADC_VALID_MAX      4015
+#define TP_SAMPLES_COUNT      5
+#define TP_ERR_RANGE          30    // Cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
+#define TP_Z1_MIN             90    // Minimum Z1 ADC count for physical contact
+#define TP_X_PLATE_OHMS       400   // Waveshare panel sheet resistance in Ohms (Device Tree specification)
+#define TP_R_TOUCH_MAX        1500  // Maximum physical contact resistance in Ohms (Linux ti,pressure-max)
+
+static uint8_t sTP_PenDownCount = 0;
+
+static uint16_t TP_AbsDiff(uint16_t Value1, uint16_t Value2)
 {
-    uint16_t Data = 0;
-
-    //A cycle of at least 400ns.
-    DEV_Digital_Write(TP_CS_PIN, 0);
-
-    SPI4W_Write_Byte(CMD);
-    Driver_Delay_us(200);
-
-    //	dont write 0xff, it will block xpt2046
-    //Data = SPI4W_Read_Byte(0Xff);
-    Data = SPI4W_Read_Byte(0X00);
-    Data <<= 8; //7bit
-    Data |= SPI4W_Read_Byte(0X00);
-    //Data = SPI4W_Read_Byte(0Xff);
-    Data >>= 3; //5bit
-    DEV_Digital_Write(TP_CS_PIN, 1);
-    return Data;
+    return (Value1 > Value2) ? (Value1 - Value2) : (Value2 - Value1);
 }
 
-/*******************************************************************************
-function:
-		Read the 5th channel value and exclude the maximum and minimum returns the average
-parameter:
-	Channel_Cmd :	0x90 :Read channel Y +
-					0xd0 :Read channel x +
-*******************************************************************************/
-#define READ_TIMES 5 //Number of readings
-#define LOST_NUM 1   //Discard value
-static uint16_t 
-TP_Read_ADC_Average(uint8_t Channel_Cmd)
+static void TP_Sort_ADC(uint16_t *pData, uint8_t Count)
 {
     uint8_t i, j;
-    uint16_t Read_Buff[READ_TIMES];
-    uint16_t Read_Sum = 0, Read_Temp = 0;
-    //LCD SPI speed = 3 MHz
-    spi_set_baudrate(SPI_PORT, 3000000);
-    //Read and save multiple samples
-    for (i = 0; i < READ_TIMES; i++)
+    uint16_t Temp;
+
+    if (Count < 2)
+        return;
+
+    for (i = 0; i < Count - 1; i++)
     {
-        Read_Buff[i] = TP_Read_ADC(Channel_Cmd);
-        Driver_Delay_us(200);
-    }
-    //LCD SPI speed = 18 MHz
-    spi_set_baudrate(SPI_PORT, 18000000);
-    //Sort from small to large
-    for (i = 0; i < READ_TIMES - 1; i++)
-    {
-        for (j = i + 1; j < READ_TIMES; j++)
+        for (j = i + 1; j < Count; j++)
         {
-            if (Read_Buff[i] > Read_Buff[j])
+            if (pData[i] > pData[j])
             {
-                Read_Temp = Read_Buff[i];
-                Read_Buff[i] = Read_Buff[j];
-                Read_Buff[j] = Read_Temp;
+                Temp = pData[i];
+                pData[i] = pData[j];
+                pData[j] = Temp;
             }
         }
     }
-
-    //Exclude the largest and the smallest
-    for (i = LOST_NUM; i < READ_TIMES - LOST_NUM; i++)
-        Read_Sum += Read_Buff[i];
-
-    //Averaging
-    Read_Temp = Read_Sum / (READ_TIMES - 2 * LOST_NUM);
-
-    return Read_Temp;
 }
 
-/*******************************************************************************
-function:
-		Read X channel and Y channel AD value
-parameter:
-	Channel_Cmd :	0x90 :Read channel Y +
-					0xd0 :Read channel x +
-*******************************************************************************/
-static void TP_Read_ADC_XY(uint16_t *pXCh_Adc, uint16_t *pYCh_Adc)
+static bool TP_Is_ADC_Valid(uint16_t Xpoint, uint16_t Ypoint)
 {
-    *pXCh_Adc = TP_Read_ADC_Average(0xD0);
-    *pYCh_Adc = TP_Read_ADC_Average(0x90);
+    return Xpoint > TP_ADC_VALID_MIN && Xpoint < TP_ADC_VALID_MAX &&
+           Ypoint > TP_ADC_VALID_MIN && Ypoint < TP_ADC_VALID_MAX;
 }
 
-/*******************************************************************************
-function:
-		2 times to read the touch screen IC, and the two can not exceed the deviation,
-		ERR_RANGE, meet the conditions, then that the correct reading, otherwise the reading error.
-parameter:
-	Channel_Cmd :	pYCh_Adc = 0x90 :Read channel Y +
-					pXCh_Adc = 0xd0 :Read channel x +
-*******************************************************************************/
-#define ERR_RANGE 50 //tolerance scope
+static uint16_t TP_Read_ADC(uint8_t CMD)
+{
+    uint8_t tx[3] = {CMD, 0x00, 0x00};
+    uint8_t rx[3] = {0, 0, 0};
+
+    DEV_Digital_Write(TP_CS_PIN, 0);
+    spi_write_read_blocking(SPI_PORT, tx, rx, 3);
+    DEV_Digital_Write(TP_CS_PIN, 1);
+
+    uint16_t Data = ((uint16_t)rx[1] << 8) | rx[2];
+    Data >>= 3;
+    return Data;
+}
+
+uint16_t TP_GetPressure(void)
+{
+    return sTP_DEV.Z1;
+}
+
 static bool TP_Read_TwiceADC(uint16_t *pXCh_Adc, uint16_t *pYCh_Adc)
 {
-    uint16_t XCh_Adc1, YCh_Adc1, XCh_Adc2, YCh_Adc2;
+    uint16_t x_buf[TP_SAMPLES_COUNT];
+    uint16_t y_buf[TP_SAMPLES_COUNT];
 
-    //Read the ADC values Read the ADC values twice
-    TP_Read_ADC_XY(&XCh_Adc1, &YCh_Adc1);
-    Driver_Delay_us(10);
-    TP_Read_ADC_XY(&XCh_Adc2, &YCh_Adc2);
-    Driver_Delay_us(10);
+    // Hardware PENIRQ line check (active low)
+    if (DEV_Digital_Read(TP_IRQ_PIN))
+        return false;
 
-    //The ADC error used twice is greater than ERR_RANGE to take the average
-    if (((XCh_Adc2 <= XCh_Adc1 && XCh_Adc1 < XCh_Adc2 + ERR_RANGE) ||
-         (XCh_Adc1 <= XCh_Adc2 && XCh_Adc2 < XCh_Adc1 + ERR_RANGE)) &&
-        ((YCh_Adc2 <= YCh_Adc1 && YCh_Adc1 < YCh_Adc2 + ERR_RANGE) ||
-         (YCh_Adc1 <= YCh_Adc2 && YCh_Adc2 < YCh_Adc1 + ERR_RANGE)))
+    spi_set_baudrate(SPI_PORT, TP_TOUCH_SPI_BAUDRATE);
+
+    // Measure touch pressure (Z1, Z2)
+    (void)TP_Read_ADC(TP_CMD_Z1);
+    Driver_Delay_us(30);
+    uint16_t z1 = TP_Read_ADC(TP_CMD_Z1);
+
+    (void)TP_Read_ADC(TP_CMD_Z2);
+    Driver_Delay_us(30);
+    uint16_t z2 = TP_Read_ADC(TP_CMD_Z2);
+
+    int32_t z = (int32_t)z1 + 4095 - (int32_t)z2;
+    if (z < 0)
+        z = 0;
+    sTP_DEV.Z1 = (uint16_t)z;
+
+    if (z1 < TP_Z1_MIN || z2 <= z1)
     {
-        *pXCh_Adc = (XCh_Adc1 + XCh_Adc2) / 2;
-        *pYCh_Adc = (YCh_Adc1 + YCh_Adc2) / 2;
-        return true;
+        // Re-enable PENIRQ and restore SPI speed
+        (void)TP_Read_ADC(TP_CMD_X);
+        spi_set_baudrate(SPI_PORT, TP_LCD_SPI_BAUDRATE);
+        return false;
     }
 
-    //The ADC error used twice is less than ERR_RANGE returns failed
-    return false;
+    // Sample X channel with settling delay
+    (void)TP_Read_ADC(TP_CMD_X);
+    Driver_Delay_us(40);
+    for (uint8_t i = 0; i < TP_SAMPLES_COUNT; i++)
+    {
+        x_buf[i] = TP_Read_ADC(TP_CMD_X);
+        Driver_Delay_us(20);
+    }
+
+    // Sample Y channel with settling delay
+    (void)TP_Read_ADC(TP_CMD_Y);
+    Driver_Delay_us(40);
+    for (uint8_t i = 0; i < TP_SAMPLES_COUNT; i++)
+    {
+        y_buf[i] = TP_Read_ADC(TP_CMD_Y);
+        Driver_Delay_us(20);
+    }
+
+    // Power down and re-enable PENIRQ with PD1=0, PD0=0
+    (void)TP_Read_ADC(TP_CMD_X);
+    spi_set_baudrate(SPI_PORT, TP_LCD_SPI_BAUDRATE);
+
+    // Verify touch remained active during sampling
+    if (DEV_Digital_Read(TP_IRQ_PIN))
+        return false;
+
+    // Median filter and spread validation for X
+    TP_Sort_ADC(x_buf, TP_SAMPLES_COUNT);
+    if ((x_buf[3] - x_buf[1]) > TP_ERR_RANGE)
+        return false;
+    uint16_t x_avg = (uint16_t)(((uint32_t)x_buf[1] + x_buf[2] + x_buf[3]) / 3);
+
+    // Median filter and spread validation for Y
+    TP_Sort_ADC(y_buf, TP_SAMPLES_COUNT);
+    if ((y_buf[3] - y_buf[1]) > TP_ERR_RANGE)
+        return false;
+    uint16_t y_avg = (uint16_t)(((uint32_t)y_buf[1] + y_buf[2] + y_buf[3]) / 3);
+
+    // Range check
+    if (!TP_Is_ADC_Valid(x_avg, y_avg))
+        return false;
+
+    *pXCh_Adc = x_avg;
+    *pYCh_Adc = y_avg;
+    return true;
+}
+
+static void TP_Read_ADC_XY(uint16_t *pXCh_Adc, uint16_t *pYCh_Adc)
+{
+    TP_Read_TwiceADC(pXCh_Adc, pYCh_Adc);
 }
 
 /*******************************************************************************
@@ -165,14 +200,14 @@ parameter:
 *******************************************************************************/
 static uint8_t TP_Scan(uint8_t chCoordType)
 {
-    //In X, Y coordinate measurement, IRQ is disabled and output is low
+    // In X, Y coordinate measurement, IRQ is disabled and output is low
     if (!DEV_Digital_Read(TP_IRQ_PIN))
-    { //Press the button to press
-        //Read the physical coordinates
+    {  // Press the button to press
+        // Read the physical coordinates
         if (chCoordType)
         {
             TP_Read_TwiceADC(&sTP_DEV.Xpoint, &sTP_DEV.Ypoint);
-            //Read the screen coordinates
+            // Read the screen coordinates
         }
         else if (TP_Read_TwiceADC(&sTP_DEV.Xpoint, &sTP_DEV.Ypoint))
         {
@@ -190,7 +225,7 @@ static uint8_t TP_Scan(uint8_t chCoordType)
             {
                 //DEBUG("(Xad,Yad) = %d,%d\r\n",sTP_DEV.Xpoint,sTP_DEV.Ypoint);
                 if (sTP_DEV.TP_Scan_Dir == R2L_D2U)
-                { //Converts the result to screen coordinates
+                {  // Converts the result to screen coordinates
                     sTP_Draw.Xpoint = sTP_DEV.fXfac * sTP_DEV.Xpoint +
                                       sTP_DEV.iXoff;
                     sTP_Draw.Ypoint = sTP_DEV.fYfac * sTP_DEV.Ypoint +
@@ -221,21 +256,25 @@ static uint8_t TP_Scan(uint8_t chCoordType)
                                       sTP_DEV.fYfac * sTP_DEV.Xpoint -
                                       sTP_DEV.iYoff;
                 }
-                // DEBUG("( x , y ) = %d,%d\r\n",sTP_Draw.Xpoint,sTP_Draw.Ypoint);
+                //DEBUG("( x , y ) = %d,%d\r\n",sTP_Draw.Xpoint,sTP_Draw.Ypoint);
             }
         }
         if (0 == (sTP_DEV.chStatus & TP_PRESS_DOWN))
-        { //Not being pressed
-            sTP_DEV.chStatus = TP_PRESS_DOWN | TP_PRESSED;
-            sTP_DEV.Xpoint0 = sTP_DEV.Xpoint;
-            sTP_DEV.Ypoint0 = sTP_DEV.Ypoint;
+        {  // Not being pressed
+            if (++sTP_PenDownCount >= 2)
+            {
+                sTP_DEV.chStatus = TP_PRESS_DOWN | TP_PRESSED;
+                sTP_DEV.Xpoint0 = sTP_DEV.Xpoint;
+                sTP_DEV.Ypoint0 = sTP_DEV.Ypoint;
+            }
         }
     }
     else
     {
+        sTP_PenDownCount = 0;
         if (sTP_DEV.chStatus & TP_PRESS_DOWN)
-        {                                  //0x80
-            sTP_DEV.chStatus &= ~(1 << 7); //0x00
+        {                                  // 0x80
+            sTP_DEV.chStatus &= ~(1 << 7);  // 0x00
         }
         else
         {
@@ -609,7 +648,7 @@ void TP_GetAdFac(void)
     else
     {
         if (sTP_DEV.TP_Scan_Dir == D2U_L2R)
-        { //SCAN_DIR_DFT = D2U_L2R
+        {  // SCAN_DIR_DFT = D2U_L2R
             sTP_DEV.fXfac = -0.132443;
             sTP_DEV.fYfac = 0.089997;
             sTP_DEV.iXoff = 516;
@@ -695,7 +734,7 @@ void TP_Dialog(void)
                               BLACK, DRAW_FULL, DOT_PIXEL_1X1);
         }
         else
-        { //Vertical screen display
+        {  // Vertical screen display
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 60, 0,
                              "CLEAR", &Font16, RED, BLUE);
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 0,
@@ -718,18 +757,16 @@ void TP_DrawBoard(void)
     //	sTP_DEV.chStatus &= ~(1 << 6);
     TP_Scan(0);
     if (sTP_DEV.chStatus & TP_PRESS_DOWN)
-    { //Press the button
+    {  // Press the button
         //Horizontal screen
         if (sTP_Draw.Xpoint < sLCD_DIS.LCD_Dis_Column &&
             //Determine whether the law is legal
             sTP_Draw.Ypoint < sLCD_DIS.LCD_Dis_Page)
         {
-            spi_init(SPI_PORT, 10000000);
-
             if (sLCD_DIS.LCD_Dis_Column > sLCD_DIS.LCD_Dis_Page && !inference->IsProcessing)
             {
 
-                // printf("horizontal x:%d,y:%d\n", sTP_Draw.Xpoint, sTP_Draw.Ypoint);
+                //printf("horizontal x:%d,y:%d\n", sTP_Draw.Xpoint, sTP_Draw.Ypoint);
 
                 if (
                     sTP_Draw.Xpoint > (sLCD_DIS.LCD_Dis_Column - 220) / 2 + 10 &&
@@ -763,8 +800,8 @@ void TP_DrawBoard(void)
                 {
                     // --- CLEAR BUTTON PRESSED ---
                     init_gui();
-                    // reset_inference(NULL);
-                    // clear_drawing();
+                    //reset_inference(NULL);
+                    //clear_drawing();
                 }
                 else
                 {
@@ -809,11 +846,9 @@ void TP_DrawBoard(void)
                     }
                 }
             }
-            spi_init(SPI_PORT, 5000000);
         }
     }
     draw_inference_result();
-    SPI4W_Write_Byte(0xFF);
 }
 
 /**
@@ -835,7 +870,7 @@ void set_box_content(void) {
                 if (ratio > 1.) ratio = 1.; 
                 uint8_t value = (uint8_t)(255 * ratio);
                 // Outlier rejection
-                // if (value < 86) value = 0;
+                //if (value < 86) value = 0;
                 // Calculate the average and store it in the output array
                 inference->UserInputs[index].InputData[i*INPUT_IMAGE_SIZE + j] = value;
             }
@@ -966,7 +1001,7 @@ void init_gui(void)
     // Calculate positions for the "LOGIN" and "CLEAR" buttons
     int button_width = 100;
     int button_height = 40;
-    int button_space = 20; // Space between the two buttons
+    int button_space = 20;  // Space between the two buttons
     int buttons_total_width = 2 * button_width + button_space;
     int buttons_start_x = (sLCD_DIS.LCD_Dis_Column - buttons_total_width) / 2;
     int button_y = start_y + BOX_SIZE + 30;
@@ -991,6 +1026,8 @@ void TP_Init(LCD_SCAN_DIR Lcd_ScanDir)
     DEV_Digital_Write(TP_CS_PIN, 1);
 
     sTP_DEV.TP_Scan_Dir = Lcd_ScanDir;
+    sTP_DEV.Z1 = 0;
+    sTP_PenDownCount = 0;
 
     TP_Read_ADC_XY(&sTP_DEV.Xpoint, &sTP_DEV.Ypoint);
 }

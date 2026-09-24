@@ -21,6 +21,7 @@ extern "C" {
 #define DATA_READY_FLAG         0xABCDEF01
 #define WRITE_FAILED_FLAG       0x12345678
 #define TASK_COMPLETE_FLAG      0xDEADBEAF
+#define SD_UNAVAILABLE_FLAG     0xBADCA4D0
 
 
 // ---- Capture area (the black box) ------------------------------------------
@@ -32,24 +33,25 @@ extern "C" {
 #define BOX_W (BOX_X1 - BOX_X0)   // 280
 #define BOX_H (BOX_Y1 - BOX_Y0)   // 240
 
-//Touch screen structure
+// Touch screen structure
 typedef struct {
 	POINT Xpoint0;
 	POINT Ypoint0;
 	POINT Xpoint;
 	POINT Ypoint;
+	uint16_t Z1;
 	uint8_t chStatus;
 	uint8_t chType;
 	int16_t iXoff;
 	int16_t iYoff;
 	float fXfac;
 	float fYfac;
-	//Select the coordinates of the XPT2046 touch \
-	  screen relative to what scan direction
+	// Select the coordinates of the XPT2046 touch
+	// screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
-//Brush structure
+// Brush structure
 typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
@@ -67,7 +69,10 @@ void TP_Adjust(void);
 void TP_Dialog(void);
 void TP_Save(void);
 void TP_DrawBoard(void);
+uint16_t TP_GetPressure(void);
 void TP_Init(LCD_SCAN_DIR Lcd_ScanDir, TP_DATA *tp_data_ptr, mutex_t *mutex);
+void TP_SetSaveBusy(bool busy);
+bool TP_GetSaveBusy(void);
 
 #ifdef __cplusplus
 }

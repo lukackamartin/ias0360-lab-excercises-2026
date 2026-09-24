@@ -43,24 +43,25 @@ extern "C" {
 #define WINDOW_SIZE 3
 #define SPACE_BETWEEN_BOXES 10
 
-//Touch screen structure
+// Touch screen structure
 typedef struct {
 	POINT Xpoint0;
 	POINT Ypoint0;
 	POINT Xpoint;
 	POINT Ypoint;
+	uint16_t Z1;
 	uint8_t chStatus;
 	uint8_t chType;
 	int16_t iXoff;
 	int16_t iYoff;
 	float fXfac;
 	float fYfac;
-	//Select the coordinates of the XPT2046 touch \
-	  screen relative to what scan direction
+	// Select the coordinates of the XPT2046 touch
+	// screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
-//Brush structure
+// Brush structure
 typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
@@ -69,14 +70,14 @@ typedef struct{
 }TP_DRAW;
 
 typedef struct{
-	uint8_t InputData[INPUT_IMAGE_SIZE * INPUT_IMAGE_SIZE]; // 784 uint8_t array
+	uint8_t InputData[INPUT_IMAGE_SIZE * INPUT_IMAGE_SIZE];  // 784 uint8_t array
 	int8_t PredictedDigit;
 } USER_INPUT;
 
 typedef struct{
-	// semaphore_t Semaphore;
-	bool IsProcessing;
-	USER_INPUT UserInputs[DIGIT_INPUT_COUNT]; // 4 inputs
+	//semaphore_t Semaphore;
+	volatile bool IsProcessing;
+	USER_INPUT UserInputs[DIGIT_INPUT_COUNT];  // 4 inputs
 } INFERENCE;
 
 typedef struct{
@@ -91,6 +92,7 @@ void TP_GetAdFac(void);
 void TP_Adjust(void);
 void TP_Dialog(void);
 void TP_DrawBoard(void);
+uint16_t TP_GetPressure(void);
 void TP_Init( LCD_SCAN_DIR Lcd_ScanDir );
 
 void init_gui(void);
@@ -106,4 +108,4 @@ void draw_inference_result();
 }
 #endif
 
-#endif // TFLITE_INFERENCE_TEST_LCD_TOUCH_H_
+#endif  // TFLITE_INFERENCE_TEST_LCD_TOUCH_H_
