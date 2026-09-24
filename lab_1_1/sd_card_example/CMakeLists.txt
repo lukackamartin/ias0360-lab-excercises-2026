@@ -4,9 +4,9 @@ if(WIN32)
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(sdkVersion 2.2.0)
+set(sdkVersion 2.3.1)
 set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.2.0)
+set(picotoolVersion 2.3.1)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -36,7 +36,7 @@ add_executable(${PROGRAM_NAME}
 # https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sdk.pdf
 target_compile_definitions(${PROGRAM_NAME} PRIVATE
   PICO_STACK_SIZE=0x1000
-  PICO_CORE1_STACK_SIZE=0x800
+  PICO_CORE1_STACK_SIZE=0x1000
 )
 
 target_compile_options(${PROGRAM_NAME} PUBLIC 

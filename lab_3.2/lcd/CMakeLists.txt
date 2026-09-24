@@ -4,9 +4,9 @@ if(WIN32)
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(sdkVersion 2.2.0)
+set(sdkVersion 2.3.1)
 set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.2.0)
+set(picotoolVersion 2.3.1)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -16,7 +16,7 @@ set(PICO_BOARD pico_w)
 
 set(PROGRAM_NAME main)
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 project(${PROGRAM_NAME} C CXX ASM)
 set(PICO_CYW43_ARCH lwip_sys_freertos CACHE STRING "" FORCE)
@@ -57,6 +57,11 @@ set_target_properties(${PROGRAM_NAME}
     COMPILE_FLAGS "-fno-rtti -fno-exceptions -fno-threadsafe-statics -nostdlib"
 )
 
+target_compile_definitions(${PROGRAM_NAME} PRIVATE
+    PICO_STACK_SIZE=0x1000
+    PICO_CORE1_STACK_SIZE=0x1000
+)
+
 target_link_libraries(${PROGRAM_NAME}
     sd_card_wrapper
     http_client
@@ -72,19 +77,25 @@ target_link_libraries(${PROGRAM_NAME}
     pico_multicore
 )
 
-add_executable(test_multicore_fifo
-    test.cpp
-)
+if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/test.cpp)
+    add_executable(test_multicore_fifo
+        test.cpp
+    )
 
-target_link_libraries(test_multicore_fifo 
-    pico_stdlib
-    pico_multicore    
-    hardware_spi
-    hardware_gpio
-    FatFs_SPI
-    sd_card_driver
-)
+    target_link_libraries(test_multicore_fifo 
+        pico_stdlib
+        pico_multicore    
+        hardware_spi
+        hardware_gpio
+        FatFs_SPI
+        sd_card_driver
+    )
 
+    pico_enable_stdio_usb(test_multicore_fifo 1)
+    pico_enable_stdio_uart(test_multicore_fifo 0)
+
+    pico_add_extra_outputs(test_multicore_fifo)
+endif()
                         
 # target_compile_options(main PRIVATE
 #     $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
@@ -101,8 +112,3 @@ pico_enable_stdio_uart(${PROGRAM_NAME} 0)
 
 
 pico_add_extra_outputs(${PROGRAM_NAME})
-
-pico_enable_stdio_usb(test_multicore_fifo 1)
-pico_enable_stdio_uart(test_multicore_fifo 0)
-
-pico_add_extra_outputs(test_multicore_fifo)
