@@ -3,7 +3,7 @@
 Canny edge detector (PC, Python with OpenCV)
 
 Usage:
-  python image_canny.py input.jpg [--out edges.png] [--t1 50] [--t2 150] [--l2]
+  python canny.py input.jpg [--out edges.png] [--t1 50] [--t2 150] [--l2]
 
 Notes:
   - --t1 and --t2 are the low/high thresholds
