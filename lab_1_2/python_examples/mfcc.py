@@ -6,7 +6,7 @@ MFCC on PC (Python)
 - Prints MFCC shape and first frame; can also save a PNG plot
 
 Usage:
-  python audio_mfcc.py [path/to/audio.wav] [--sr 16000] [--n_mfcc 13] [--plot out.png]
+  python mfcc.py [path/to/audio.wav] [--sr 16000] [--n_mfcc 13] [--plot out.png]
 """
 import argparse
 import numpy as np
