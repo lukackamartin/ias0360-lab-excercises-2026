@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM debian:trixie-backports
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,12 +21,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libglib2.0-0 \
         libgomp1 \
         openssh-client \
+        nano \
     && rm -rf /var/lib/apt/lists/*
 
 
 ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv "${VIRTUAL_ENV}"
+RUN python3.13 -m venv "${VIRTUAL_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/xpu \
+        torch \
+        torchvision \
+        torchaudio
 
 RUN pip install --no-cache-dir \
         pyserial \
@@ -36,28 +42,28 @@ RUN pip install --no-cache-dir \
         pillow \
         scikit-learn \
         opencv-python-headless \
-        tensorflow \
-        tensorflow-model-optimization \
+        litert-torch-nightly \
+        ai-edge-litert \
         tqdm \
         jupyterlab \
         ipykernel
 
-ENV JUPYTER_CONFIG_DIR=/opt/jupyter/config \
-    JUPYTER_DATA_DIR=/opt/jupyter/data \
-    JUPYTER_RUNTIME_DIR=/opt/jupyter/runtime
+ENV JUPYTER_CONFIG_DIR=/opt/jupyter/config
+ENV JUPYTER_DATA_DIR=/opt/jupyter/data
+ENV JUPYTER_RUNTIME_DIR=/opt/jupyter/runtime
 RUN mkdir -p "${JUPYTER_CONFIG_DIR}" "${JUPYTER_DATA_DIR}" "${JUPYTER_RUNTIME_DIR}"
 
-ENV PICO_SDK_VERSION=2.3.0
+ENV PICO_SDK_VERSION=2.3.1
 ENV PICO_SDK_PATH=/opt/pico-sdk
-RUN git clone --branch "${PICO_SDK_VERSION}" --depth 1 --recurse-submodules \
-        https://github.com/raspberrypi/pico-sdk.git "${PICO_SDK_PATH}"
+RUN git clone --branch "${PICO_SDK_VERSION}" --depth 1 --recurse-submodules https://github.com/raspberrypi/pico-sdk.git "${PICO_SDK_PATH}"
 
-ENV PICOTOOL_VERSION=2.3.0
-RUN git clone --branch "${PICOTOOL_VERSION}" --depth 1 https://github.com/raspberrypi/picotool.git /opt/picotool \
-    && cmake -S /opt/picotool -B /opt/picotool/build -DPICO_SDK_PATH="${PICO_SDK_PATH}" \
-    && cmake --build /opt/picotool/build --target install -j"$(nproc)" \
+ENV PICOTOOL_VERSION=2.3.1
+ENV PICOTOOL_PATH=/opt/picotool
+RUN git clone --branch "${PICOTOOL_VERSION}" --depth 1 https://github.com/raspberrypi/picotool.git "${PICOTOOL_PATH}" \
+    && cmake -S "${PICOTOOL_PATH}" -B "${PICOTOOL_PATH}/build" -DPICO_SDK_PATH="${PICO_SDK_PATH}" \
+    && cmake --build "${PICOTOOL_PATH}/build" --target install -j"$(nproc)" \
     && ldconfig \
-    && rm -rf /opt/picotool/build
+    && rm -rf "${PICOTOOL_PATH}/build"
 
 WORKDIR /root
 

@@ -108,6 +108,10 @@ if [[ -z "${ENTRYPOINT_DROPPED:-}" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" &
         chmod -R o+rw /dev/bus/usb 2>/dev/null || true
     fi
 
+    # Dynamically map the runtime host UID and GID to a username entry
+    getent group "${HOST_GID}" >/dev/null || echo "student:x:${HOST_GID}:" >> /etc/group
+    getent passwd "${HOST_UID}" >/dev/null || echo "student:x:${HOST_UID}:${HOST_GID}:student:${HOME}:/bin/bash" >> /etc/passwd
+
     # KEY_DIR, and Jupyter's config/data/runtime dirs, all live in the
     # image's own /opt, root-owned (mode 755) by the Dockerfile's build-time
     # `mkdir`. Hand them to the student's UID now, while still root, so the
