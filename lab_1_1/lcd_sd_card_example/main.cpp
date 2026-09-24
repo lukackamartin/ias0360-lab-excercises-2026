@@ -14,40 +14,45 @@
 #include "LCD_GUI.h"
 #include "DEV_Config.h"
 
-#define PATH_MAX_LEN 256
-#define MAX_FILE_WRITE 3
+extern LCD_DIS sLCD_DIS;
 
+#define PATH_MAX_LEN 256
+
+#ifndef WRITE_SUCCESS_FLAG
+#define WRITE_SUCCESS_FLAG 0xABCDEF02
+#endif
 
 mutex_t mutex;
 TP_DATA tp_data;
 
+// Static pre-allocated snapshot buffer to prevent malloc() in TP_Save()
+// Double-buffered with sDrawShadow for non-blocking Core 1 SD export
+static uint8_t s_tp_save_buf[BOX_W * BOX_H];
+
+// Sector-aligned streaming chunk buffer (4096 B = 8 physical 512-byte sectors)
+// Invokes CMD25_WRITE_MULTIPLE_BLOCK in FatFs via DMA
+static char s_chunk_buf[4096];
+
+// Static file object and path buffers to prevent stack overflow on Core 1's 4 KB stack
+static FIL s_fil;
+static char s_path[PATH_MAX_LEN];
+static char s_name[64];
+
 // --------- Globals (FatFs requires the FS to outlive the mount) ----------
-static FATFS fs;                 // must be static/global (lives as long as the mount)
-static sd_card_t *g_sd = NULL;   // active SD card
-static const char *g_drive = NULL; // typically "0:"
-
-// ------------------------- Utility / Error -------------------------------
-static void die(FRESULT fr, const char *op) {
-    printf("%s failed: %s (%d)\n", op, FRESULT_str(fr), fr);
-    multicore_fifo_push_blocking(WRITE_FAILED_FLAG);
-    while (1) tight_loop_contents();
-}
-
-static void loop_forever_msg(const char *msg) {
-    printf("%s\n", msg);
-    while (1) tight_loop_contents();
-}
+static FATFS fs;                    // must be static/global (lives as long as the mount)
+static sd_card_t *g_sd = NULL;      // active SD card
+static const char *g_drive = NULL;  // typically "0:"
 
 static void join_path(char *out, size_t out_sz, const char *drive, const char *rel) {
     // drive = "0:" or "0:/", ensure exactly one slash when joining
-    if (rel && rel[0] == '/') rel++; // avoid double slashes
+    if (rel && rel[0] == '/') rel++;  // avoid double slashes
     if (drive && drive[strlen(drive) - 1] == '/')
         snprintf(out, out_sz, "%s%s", drive, rel ? rel : "");
     else
         snprintf(out, out_sz, "%s/%s", drive, rel ? rel : "");
 }
 
-// ------------------------- 1) Initialization -----------------------------
+// ------------------------- Initialization ---------------------------------
 static bool sd_init_and_mount(void) {
     if (!sd_init_driver()) {
         printf("sd_init_driver() failed\n");
@@ -66,11 +71,16 @@ static bool sd_init_and_mount(void) {
         return false;
     }
 
+    // Force driver state to uninitialized so f_mount performs a fresh hardware bus probe
+    if (g_sd->deinit) {
+        g_sd->deinit(g_sd);
+    }
+
     FRESULT fr = f_mount(&fs, g_drive, 1);
     printf("f_mount -> %s (%d)\n", FRESULT_str(fr), fr);
 
     if (fr == FR_NO_FILESYSTEM) {
-        BYTE work[4096]; // >= FF_MAX_SS
+        static BYTE work[4096];  // >= FF_MAX_SS (static to avoid stack overflow)
         MKFS_PARM opt = { FM_FAT | FM_SFD, 0, 0, 0, 0 };
         fr = f_mkfs(g_drive, &opt, work, sizeof work);
         printf("f_mkfs -> %s (%d)\n", FRESULT_str(fr), fr);
@@ -82,111 +92,62 @@ static bool sd_init_and_mount(void) {
 
     if (fr != FR_OK) {
         printf("Mount failed: %s (%d)\n", FRESULT_str(fr), fr);
+        f_unmount(g_drive);
+        if (g_sd->deinit) {
+            g_sd->deinit(g_sd);
+        }
         return false;
     }
 
     return true;
 }
 
-// ------------------------- 2) File creation ------------------------------
+// ------------------------- File creation ----------------------------------
 static FRESULT create_file(const char *abs_path, FIL *out_file) {
     // Creates/truncates a file and opens it for writing
     return f_open(out_file, abs_path, FA_WRITE | FA_CREATE_ALWAYS);
 }
 
-// ------------------------- 3) File writing -------------------------------
-static FRESULT write_to_file(FIL *file, const void *data, UINT len, UINT *bytes_written) {
-    *bytes_written = 0;
-    
-    printf("write_to_file: About to write %u bytes from pointer %p\n", len, data);
-    printf("write_to_file: First few bytes: %02X %02X %02X %02X\n",
-           ((uint8_t*)data)[0], ((uint8_t*)data)[1], 
-           ((uint8_t*)data)[2], ((uint8_t*)data)[3]);
-    
-    FRESULT fr = f_write(file, data, len, bytes_written);
-    printf("write_to_file: f_write returned FR=%d, wrote %u bytes\n", fr, *bytes_written);
-    
-    if (fr == FR_OK) {
-        fr = f_sync(file); // ensure data hits the card
-        printf("write_to_file: f_sync returned FR=%d\n", fr);
-    }
-    
-    return fr;
-}
-
-// ------------------------- 4) File checking/listing ----------------------
-typedef struct {
-    uint32_t files;
-    uint32_t dirs;
-    uint64_t total_bytes;
-} list_stats_t;
-
+// ------------------------- File checking/listing --------------------------
 static bool is_dot_or_dotdot(const char *name) {
     return (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')));
 }
 
-static FRESULT list_dir_recursive(const char *path, list_stats_t *stats) {
-    DIR dir;
-    FILINFO fno;
-    FRESULT fr = f_opendir(&dir, path);
+// Public checker: non-recursive root listing using static structures (0 stack overhead)
+static FRESULT check_and_list_files(const char *root_drive) {
+    char root[PATH_MAX_LEN];
+    join_path(root, sizeof root, root_drive, "");
+
+    static DIR dir;
+    static FILINFO fno;
+    FRESULT fr = f_opendir(&dir, root);
     if (fr != FR_OK) {
-        printf("f_opendir('%s') -> %s (%d)\n", path, FRESULT_str(fr), fr);
+        printf("f_opendir('%s') -> %s (%d)\n", root, FRESULT_str(fr), fr);
         return fr;
     }
 
+    uint32_t files = 0, dirs = 0;
+    uint64_t total_bytes = 0;
+
+    printf("\n--- SD Card File Listing for '%s' ---\n", root_drive);
     for (;;) {
         fr = f_readdir(&dir, &fno);
-        if (fr != FR_OK) {
-            printf("f_readdir('%s') -> %s (%d)\n", path, FRESULT_str(fr), fr);
-            break;
-        }
-        if (fno.fname[0] == '\0') break; // end of directory
-
+        if (fr != FR_OK || fno.fname[0] == '\0') break;
         if (is_dot_or_dotdot(fno.fname)) continue;
 
         if (fno.fattrib & AM_DIR) {
-            stats->dirs++;
-            char subpath[PATH_MAX_LEN];
-            snprintf(subpath, sizeof subpath, "%s/%s", path, fno.fname);
-            printf("[DIR]  %s\n", subpath);
-            fr = list_dir_recursive(subpath, stats);
-            if (fr != FR_OK) break;
+            dirs++;
+            printf("[DIR]  %s\n", fno.fname);
         } else {
-            stats->files++;
-            stats->total_bytes += (uint64_t)fno.fsize;
-            printf("[FILE] %s/%s  (%lu bytes)\n", path, fno.fname, (unsigned long)fno.fsize);
+            files++;
+            total_bytes += (uint64_t)fno.fsize;
+            printf("[FILE] %s  (%lu bytes)\n", fno.fname, (unsigned long)fno.fsize);
         }
     }
+    f_closedir(&dir);
 
-    FRESULT frc = f_closedir(&dir);
-    if (fr == FR_OK && frc != FR_OK) fr = frc;
-    return fr;
-}
-
-// Public checker: lists all files and sizes, and tells if any exist
-static FRESULT check_and_list_files(const char *root_drive) {
-    // Build root path "0:/"
-    char root[PATH_MAX_LEN];
-    join_path(root, sizeof root, root_drive, ""); // ensures a trailing slash when we add children
-
-    list_stats_t stats = {0};
-    printf("\n--- SD Card File Listing for '%s' ---\n", root_drive);
-    FRESULT fr = list_dir_recursive(root_drive, &stats);
-    if (fr != FR_OK && fr != FR_NO_PATH) {
-        printf("Directory listing aborted due to error.\n");
-        return fr;
-    }
-
-    if (stats.files == 0 && stats.dirs == 0) {
-        printf("No files or directories found on the SD card.\n");
-    } else if (stats.files == 0) {
-        printf("No files found (but %u director%s present).\n", stats.dirs, (stats.dirs == 1 ? "y" : "ies"));
-    } else {
-        printf("\nSummary: %u file%s in %u director%s, total %llu bytes.\n",
-               stats.files, (stats.files == 1 ? "" : "s"),
-               stats.dirs, (stats.dirs == 1 ? "y" : "ies"),
-               (unsigned long long)stats.total_bytes);
-    }
+    printf("Summary: %lu file(s), %lu dir(s), %llu bytes.\n",
+           (unsigned long)files, (unsigned long)dirs, (unsigned long long)total_bytes);
     return FR_OK;
 }
 
@@ -195,17 +156,18 @@ static FRESULT check_and_list_files(const char *root_drive) {
 void core1_entry() {
 
     printf("Core 1 entry: write to SD card\n");
-    sleep_ms(2000);
 
-    // 1) Init + mount
-    if (!sd_init_and_mount()) {
-        loop_forever_msg("SD init/mount failed.");
+    // Init and mount filesystem (Core 0 never touches SDIO)
+    bool mounted = sd_init_and_mount();
+    if (mounted) {
+        check_and_list_files(g_drive);
+    } else {
+        printf("Core 1: SD card not detected at startup. Will initialize on demand.\n");
     }
 
     int count = 0;
-    FRESULT fr;
 
-    while (count < MAX_FILE_WRITE) {
+    while (true) {
 
         uint32_t msg = multicore_fifo_pop_blocking();
         if (msg != DATA_READY_FLAG) {
@@ -213,97 +175,149 @@ void core1_entry() {
             continue;
         }
 
+        // If card was removed or not detected at boot, attempt to mount now
+        if (!mounted) {
+            printf("Core 1: Attempting to mount SD card on demand...\n");
+            mounted = sd_init_and_mount();
+            if (!mounted) {
+                printf("Core 1: SD card unavailable / not mounted\n");
+                multicore_fifo_push_blocking(SD_UNAVAILABLE_FLAG);
+                continue;
+            }
+            check_and_list_files(g_drive);
+        }
+
         printf("Writing data to a file\n");
 
-        // Build absolute file path: <drive>/lcd_sd_card_example_<iteration>.txt
-        char path[PATH_MAX_LEN];
-        char name[64];
-        snprintf(name, sizeof(name), "lcd_sd_card_example_%d.txt", count);
-        join_path(path, sizeof path, g_drive, name);
-
-        printf("Core 1: Creating and writing to file: %s\n", path);
-        // 2) Create the file
-        FIL f;
-        fr = create_file(path, &f);
-        if (fr != FR_OK) die(fr, "f_open(create)");
-
+        // Validate snapshot under mutex
         mutex_enter_blocking(&mutex);
+        size_t len = tp_data.data_len;
+        bool valid = (tp_data.data != NULL && len == (size_t)(BOX_W * BOX_H));
+        mutex_exit(&mutex);
 
-        // 3) Write data
-        UINT bw = 0;
-
-        // Check if data is valid
-        printf("Core 1: tp_data.data_len = %zu\n", tp_data.data_len);
-        printf("Core 1: tp_data.data pointer = %p\n", (void*)tp_data.data);
-        
-        if (tp_data.data == NULL || tp_data.data_len == 0) {
+        if (!valid) {
             printf("ERROR: tp_data.data is NULL or data_len is 0!\n");
-            mutex_exit(&mutex);
-            f_close(&f);
+            multicore_fifo_push_blocking(WRITE_FAILED_FLAG);
             continue;
         }
 
-        // Print all the data stored in tp_data.data
-        printf("Data contents (%zu bytes): ", tp_data.data_len);
-        for (size_t i = 0; i < tp_data.data_len; i++) {
-            printf("%u ", tp_data.data[i]);
-            if ((i + 1) % BOX_W == 0) printf("\n");
-        }
-        if (tp_data.data_len % 16 != 0) printf("\n");
+        // Build absolute file path: <drive>/lcd_sd_card_example_<iteration>.txt
+        snprintf(s_name, sizeof(s_name), "lcd_sd_card_example_%d.txt", count);
+        join_path(s_path, sizeof(s_path), g_drive, s_name);
 
-        // Convert binary 0/1 to ASCII '0'/'1' for human-readable text file
-        char *ascii_buffer = (char *)malloc(tp_data.data_len);
-        if (ascii_buffer == NULL) {
-            printf("ERROR: Failed to allocate ASCII buffer\n");
-            mutex_exit(&mutex);
-            f_close(&f);
-            die(FR_NOT_ENOUGH_CORE, "malloc");
+        printf("Core 1: Creating and writing to file: %s\n", s_path);
+
+        // Create the file
+        FRESULT fr = create_file(s_path, &s_fil);
+        if (fr != FR_OK) {
+            printf("Core 1: create_file failed: %s (%d)\n", FRESULT_str(fr), fr);
+            f_unmount(g_drive);
+            if (g_sd && g_sd->deinit) {
+                g_sd->deinit(g_sd);
+            }
+            mounted = false;
+            multicore_fifo_push_blocking(SD_UNAVAILABLE_FLAG);
+            continue;
         }
-        
-        for (size_t i = 0; i < tp_data.data_len; i++) {
-            ascii_buffer[i] = tp_data.data[i] ? '1' : '0';  // Convert to ASCII '0' or '1'
+
+        // Stream bitmap formatted into sector-aligned 4096-byte chunks (CMD25 via DMA)
+        size_t buf_pos = 0;
+        int hlen = snprintf(s_chunk_buf, sizeof(s_chunk_buf),
+                            "# LCD Drawing %d (%dx%d)\n", count, BOX_W, BOX_H);
+        if (hlen > 0) {
+            buf_pos = (size_t)hlen;
         }
-        
-        fr = write_to_file(&f, ascii_buffer, (UINT)tp_data.data_len, &bw);
-        free(ascii_buffer);
-        
-        printf("Core 1: write_to_file returned FR=%d, bytes_written=%u (expected %zu)\n", 
-               fr, bw, tp_data.data_len);
-        if (fr != FR_OK || bw != tp_data.data_len) {
-            printf("ERROR: Write failed or incomplete! FR=%d, wrote %u/%zu bytes\n", 
-                   fr, bw, tp_data.data_len);
-            die(fr, "f_write/f_sync");
+
+        bool write_ok = true;
+        UINT total_bw = 0;
+
+        for (uint16_t y = 0; y < BOX_H && write_ok; y++) {
+            const uint8_t *row_src = &s_tp_save_buf[y * BOX_W];
+            for (uint16_t x = 0; x < BOX_W; x++) {
+                s_chunk_buf[buf_pos++] = row_src[x] ? '1' : '0';
+                if (buf_pos == sizeof(s_chunk_buf)) {
+                    UINT bw = 0;
+                    fr = f_write(&s_fil, s_chunk_buf, sizeof(s_chunk_buf), &bw);
+                    if (fr != FR_OK || bw != sizeof(s_chunk_buf)) {
+                        write_ok = false;
+                        break;
+                    }
+                    total_bw += bw;
+                    buf_pos = 0;
+                }
+            }
+            if (!write_ok) break;
+
+            s_chunk_buf[buf_pos++] = '\n';
+            if (buf_pos == sizeof(s_chunk_buf)) {
+                UINT bw = 0;
+                fr = f_write(&s_fil, s_chunk_buf, sizeof(s_chunk_buf), &bw);
+                if (fr != FR_OK || bw != sizeof(s_chunk_buf)) {
+                    write_ok = false;
+                    break;
+                }
+                total_bw += bw;
+                buf_pos = 0;
+            }
         }
-        
+
+        // Flush remaining bytes in chunk buffer
+        if (write_ok && buf_pos > 0) {
+            UINT bw = 0;
+            fr = f_write(&s_fil, s_chunk_buf, (UINT)buf_pos, &bw);
+            if (fr != FR_OK || bw != (UINT)buf_pos) {
+                write_ok = false;
+            } else {
+                total_bw += bw;
+            }
+        }
+
+        if (write_ok) {
+            fr = f_sync(&s_fil);
+            if (fr != FR_OK) {
+                write_ok = false;
+            }
+        }
+
         // Close the file
-        f_close(&f);
+        f_close(&s_fil);
 
+        // Explicitly terminate SDIO multiblock write (CMD12) so card is not left in receive mode
+        if (g_sd && g_sd->sync) {
+            g_sd->sync(g_sd);
+        }
 
-        mutex_exit(&mutex);
-        
-        count++;
-        printf("----- File write iteration %d -----\n", count);
+        if (write_ok) {
+            count++;
+            printf("Core 1: File write succeeded, wrote %u bytes (%u rows)\n", total_bw, BOX_H);
+            multicore_fifo_push_blocking(WRITE_SUCCESS_FLAG);
+            printf("----- File write iteration %d -----\n", count);
+        } else {
+            printf("ERROR: Write failed! FR=%d, wrote %u bytes\n", fr, total_bw);
+            f_unmount(g_drive);
+            if (g_sd && g_sd->deinit) {
+                g_sd->deinit(g_sd);
+            }
+            mounted = false;
+            if (fr == FR_NOT_READY || fr == FR_DISK_ERR) {
+                multicore_fifo_push_blocking(SD_UNAVAILABLE_FLAG);
+            } else {
+                multicore_fifo_push_blocking(WRITE_FAILED_FLAG);
+            }
+        }
     }
-
-    // Optional: unmount
-    fr = f_unmount(g_drive);
-    printf("f_unmount -> %s (%d)\n", FRESULT_str(fr), fr);
-
-    sleep_ms(1000);  // optional flush delay
-    multicore_fifo_push_blocking(TASK_COMPLETE_FLAG); // acknowledge successful send
-
-    printf("Core 1 task complete.\n");
-
-    while (1) { tight_loop_contents(); }
 }
 
 
 int main(void) {
 
     System_Init();
-    sleep_ms(3000);
 
-    mutex_init(&mutex);  // Initialize the mutex
+    mutex_init(&mutex);
+
+    // Pre-initialize tp_data buffer to static storage so TP_Save() never calls malloc()
+    tp_data.data = s_tp_save_buf;
+    tp_data.data_len = sizeof(s_tp_save_buf);
 
 	LCD_SCAN_DIR  lcd_scan_dir = SCAN_DIR_DFT;
 	LCD_Init(lcd_scan_dir,1000);
@@ -314,26 +328,28 @@ int main(void) {
     multicore_launch_core1(core1_entry);
 
 	while(1){
+        TP_GetSaveBusy();
         if (multicore_fifo_rvalid()) {
             uint32_t msg = multicore_fifo_pop_blocking();
-            if (msg == TASK_COMPLETE_FLAG) {
-                printf("Core 0: Core 1 task complete.\n");
-                break;
+            if (msg == WRITE_SUCCESS_FLAG) {
+                printf("Core 0: Core 1 reported write success.\n");
+                GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 24,
+                                 "SAVED!", &Font16, BLACK, GREEN);
+                TP_SetSaveBusy(false);
             } else if (msg == WRITE_FAILED_FLAG) {
                 printf("Core 0: Core 1 reported write failure.\n");
-                loop_forever_msg("Write failed on Core 1.");
+                GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 24,
+                                 "FAILED", &Font16, BLACK, RED);
+                TP_SetSaveBusy(false);
+            } else if (msg == SD_UNAVAILABLE_FLAG) {
+                printf("Core 0: Core 1 reported SD card unavailable.\n");
+                GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 24,
+                                 "NO SD!", &Font16, BLACK, YELLOW);
+                TP_SetSaveBusy(false);
             }
-        } else {
-			LCD_SetBackLight(1000);
-			TP_DrawBoard();
         }
+        TP_DrawBoard();
 	}
 
-    printf("All tasks complete.\n");
-    mutex_exit(&mutex);
-    multicore_reset_core1();
-
-    printf("Exiting main().\n");
-    
-    return 0;
+	return 0;
 }
