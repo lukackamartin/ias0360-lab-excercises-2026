@@ -37,7 +37,7 @@ SD_CardWrapper::SD_CardWrapper(){
     printf("f_mount -> %s (%d)\n", FRESULT_str(fr), fr);
 
     if (fr == FR_NO_FILESYSTEM) {
-        BYTE work[4096]; // >= FF_MAX_SS
+        static BYTE work[4096];  // >= FF_MAX_SS (static to avoid stack overflow)
         MKFS_PARM opt = { FM_FAT | FM_SFD, 0, 0, 0, 0 };
         fr = f_mkfs(this->drive_, &opt, work, sizeof(work));
         printf("f_mkfs -> %s (%d)\n", FRESULT_str(fr), fr);
@@ -83,7 +83,7 @@ FRESULT SD_CardWrapper::writeToFile(FIL *file, const void *data, UINT len, UINT 
     *bytes_written = 0;
     FRESULT fr = f_write(file, data, len, bytes_written);
     if (fr == FR_OK) {
-        fr = f_sync(file); // ensure data hits the card
+        fr = f_sync(file);  // ensure data hits the card
     }
     return fr;
 }
@@ -121,7 +121,7 @@ FRESULT SD_CardWrapper::listDirRecursive(const char *path, list_stats_t *stats) 
             printf("f_readdir('%s') -> %s (%d)\n", path, FRESULT_str(fr), fr);
             break;
         }
-        if (fno.fname[0] == '\0') break; // end of directory
+        if (fno.fname[0] == '\0') break;  // end of directory
 
         if (is_dot_or_dotdot(fno.fname)) continue;
 
@@ -147,7 +147,7 @@ FRESULT SD_CardWrapper::listDirRecursive(const char *path, list_stats_t *stats) 
 FRESULT SD_CardWrapper::checkAndListFiles(void) {
     
     char root[PATH_MAX_LEN];
-    joinPath(root, sizeof(root), ""); // ensures a trailing slash when we add children
+    joinPath(root, sizeof(root), "");  // ensures a trailing slash when we add children
 
     list_stats_t stats = {0};
     printf("\n--- SD Card File Listing for '%s' ---\n", this->drive_);
@@ -203,14 +203,14 @@ bool SD_CardWrapper::writeFile(const std::string& relPath, const void* data, siz
 
     UINT written = 0;
 
-    // uint8_t buffer[] = {0, 1, 2, 3, 4};
+    //uint8_t buffer[] = {0, 1, 2, 3, 4};
 
-    // fr = f_write(&file, buffer, sizeof(buffer), &written);
-    // if (fr != FR_OK) {
-    //     printf("f_write failed: %s (%d)\n", FRESULT_str(fr), fr);
-    // } else {
-    //     printf("Wrote %u bytes\n", written);
-    // }
+    //fr = f_write(&file, buffer, sizeof(buffer), &written);
+    //if (fr != FR_OK) {
+    //    printf("f_write failed: %s (%d)\n", FRESULT_str(fr), fr);
+    //} else {
+    //    printf("Wrote %u bytes\n", written);
+    //}
     fr = f_write(&file, data, len, &written);
     if (fr != FR_OK) {
         printFresult(fr, "write_to_file");

@@ -22,15 +22,13 @@ static inline void debug_unpause_timer(void) {
 }
 
 volatile OCR_Packet g_ocr_packet;
-mutex_t mutex;  // Declare a mutex
+mutex_t mutex;
 
 
 int init_wifi_connection(void) {
 
 	stdio_init_all();
-    debug_unpause_timer();  
-
-    sleep_ms(5000);
+    debug_unpause_timer();
 
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
@@ -45,10 +43,7 @@ int init_wifi_connection(void) {
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0) {
         printf("Attempting to connect...\n");
     }
-    // Print a success message once connected
     printf("WiFi connected successfully! \n");
-
-    sleep_ms(3000);
 
     return 0;
 }
@@ -133,12 +128,11 @@ int post_request_with_chunked_body(void) {
 
         offset += chunk_elems;
         packet_index++;
-        sleep_ms(100);  // optional flush delay
 
         request.reinitialize();
 
         if (response.y) {
-            free(response.y); // free the response string if it was allocated
+            free(response.y);  // free the response string if it was allocated
             response.y = NULL;
         }
     }
@@ -169,8 +163,6 @@ void write_data_to_sd_card(void) {
         while (1) tight_loop_contents();
     }
 
-    sleep_ms(100);  // optional flush delay
-
     // erase the content if any
     if (!sd_card.clearFile(SD_CARD_FILENAME)) {
         printf("Failed to clear existing file content on SD card\n");
@@ -190,8 +182,6 @@ void write_data_to_sd_card(void) {
         }
         
         offset += chunk_elems;
-
-        sleep_ms(100);  // optional flush delay
     }
     if (!success) {
         printf("Data write to SD card failed.\n");
@@ -208,7 +198,7 @@ void write_data_to_sd_card(void) {
 
     printf("Data write to SD card completed.\n");
 
-    multicore_fifo_push_blocking(DATA_WRITE_COMPLETE_FLAG); // indicate data write complete
+    multicore_fifo_push_blocking(DATA_WRITE_COMPLETE_FLAG);  // indicate data write complete
     while (1) tight_loop_contents();
 }
 
@@ -245,7 +235,6 @@ void read_data_from_sd_card(void) {
         while (1) tight_loop_contents();
     }
     printf("[Publisher] SD card mounted successfully for reading data.\n");
-    sleep_ms(100);  // optional flush delay
 
     // get total file size from SD card
     size_t file_size = sd_card.getFileSize(SD_CARD_FILENAME);
@@ -290,10 +279,9 @@ void read_data_from_sd_card(void) {
         offset += chunk_elems;
         printf("Core 0 got ack from the main Core.\n");
         printf("Processing the next chunk...\n");
-        sleep_ms(100);  // optional flush delay
     }
     
-    multicore_fifo_push_blocking(END_REQUEST_FLAG); // indicate end of request
+    multicore_fifo_push_blocking(END_REQUEST_FLAG);  // indicate end of request
     printf("Data read from SD card complete.\n");
     while (1) tight_loop_contents();
 }
@@ -303,14 +291,12 @@ int post_request_with_chunked_body_from_sd_card(void) {
 
     printf("[Subscriber] Sending POST request with chunked body from SD card...\n");
     
-    mutex_init(&mutex);  // Initialize the mutex
+    mutex_init(&mutex);
     
     // Set URL
     const char* post_url = "/api/v1/test_large_request";
     HttpRequest request(post_url);
     printf("[Subscriber] HTTP request object created.\n");
-
-    sleep_ms(1000);  // optional flush delay
 
     multicore_launch_core1(read_data_from_sd_card);
 
@@ -347,11 +333,10 @@ int post_request_with_chunked_body_from_sd_card(void) {
         // Send POST request
         ResponseDataStr response = request.post();
         if (!response.status_ok) {
-                printf("[Subscriber] Chunk send failed at packet index %zu.\n", g_ocr_packet.packet_index);
-                multicore_fifo_push_blocking(REQUEST_FAILED_FLAG);
-                sleep_ms(100);  // optional flush delay
-                continue;
-            }
+            printf("[Subscriber] Chunk send failed at packet index %zu.\n", g_ocr_packet.packet_index);
+            multicore_fifo_push_blocking(REQUEST_FAILED_FLAG);
+            continue;
+        }
 
         if (g_ocr_packet.packet_index == g_ocr_packet.total_packet_size - 1) {
             printf("[Subscriber] Sent last packet %d/%d\n", g_ocr_packet.packet_index + 1, g_ocr_packet.total_packet_size);
@@ -362,22 +347,15 @@ int post_request_with_chunked_body_from_sd_card(void) {
 
         request.reinitialize();
 
-        sleep_ms(300);  // optional flush delay
-        multicore_fifo_push_blocking(DATA_ACK_FLAG); // acknowledge successful send
+        multicore_fifo_push_blocking(DATA_ACK_FLAG);  // acknowledge successful send
 
         if (response.y) {
-            free(response.y); // free the response string if it was allocated
+            free(response.y);  // free the response string if it was allocated
             response.y = NULL;
         }
     }
 
-    // Destroy request object
-    printf("[Subscriber] Destroying HTTP request object...\n");
-    request.~HttpRequest();
-
-    // destroy core 1
-    printf("[Subscriber] Destroying core 1...\n");
-    mutex_exit(&mutex);
+    printf("[Subscriber] Resetting core 1...\n");
     multicore_reset_core1();
 
     printf("[Subscriber] Exiting POST request function.\n");
@@ -392,19 +370,19 @@ int main(void)
     }
 
     // Check WiFi POST request with MNIST data
-    return post_request_with_mnist_data(); // Send MINIST POST request
+    return post_request_with_mnist_data();        // Send MINIST POST request
 
 
     // Check WiFi POST request with chunked body stored in memory
-    // return post_request_with_chunked_body(); // Send POST request with chunked body
+    //return post_request_with_chunked_body();    // Send POST request with chunked body
     
 
     // Check WiFi POST request with chunked body stored in SD card
     // Before sending the POST request, first write data to SD card
 
     // Write text data to SD card
-    // return prior_post_request_with_chunked_body_from_sd_card();
+    //return prior_post_request_with_chunked_body_from_sd_card();
 
     // Then send POST request with chunked body read from SD card
-    // return post_request_with_chunked_body_from_sd_card(); 
+    //return post_request_with_chunked_body_from_sd_card();
 }

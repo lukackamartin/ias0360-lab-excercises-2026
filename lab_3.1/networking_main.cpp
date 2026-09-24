@@ -22,9 +22,7 @@ static inline void debug_unpause_timer(void) {
 int wifi_connection_example(void) {
 
 	stdio_init_all();
-    debug_unpause_timer();  
-
-    sleep_ms(5000);
+    debug_unpause_timer();
 
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
@@ -39,10 +37,7 @@ int wifi_connection_example(void) {
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0) {
         printf("Attempting to connect...\n");
     }
-    // Print a success message once connected
     printf("WiFi connected successfully! \n");
-
-    sleep_ms(3000);
 
     while (1) tight_loop_contents();
     return 0;
@@ -53,8 +48,6 @@ int get_request_example(void) {
 	stdio_init_all();
     debug_unpause_timer();  
 
-    sleep_ms(5000);
-
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
         return -1;
@@ -68,10 +61,7 @@ int get_request_example(void) {
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0) {
         printf("Attempting to connect...\n");
     }
-    // Print a success message once connected
     printf("WiFi connected successfully! \n");
-
-    sleep_ms(3000);
 
     const char* get_url = "/api/v1/healthcheck";
     HttpRequest request(get_url);
@@ -90,9 +80,7 @@ int get_request_example(void) {
 // Send POST request
 int post_request_example(void) {
     stdio_init_all();
-    debug_unpause_timer();  
-
-    sleep_ms(5000);
+    debug_unpause_timer();
 
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
@@ -107,10 +95,7 @@ int post_request_example(void) {
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0) {
         printf("Attempting to connect...\n");
     }
-    // Print a success message once connected
     printf("WiFi connected successfully! \n");
-
-    sleep_ms(3000);
 
     const char* post_url = "/api/v1/greet";
     HttpRequest request(post_url);
@@ -131,7 +116,6 @@ int post_request_example(void) {
         printf("POST Request failed\n");
     }
 
-
     while (1) tight_loop_contents();
     return 0;
 }
@@ -142,9 +126,7 @@ int post_request_example(void) {
 // content-type: application/json
 int post_request_with_float_data(void) {
     stdio_init_all();
-    debug_unpause_timer();  
-
-    sleep_ms(5000);
+    debug_unpause_timer();
 
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
@@ -159,10 +141,7 @@ int post_request_with_float_data(void) {
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0) {
         printf("Attempting to connect...\n");
     }
-    // Print a success message once connected
     printf("WiFi connected successfully! \n");
-
-    sleep_ms(3000);
 
     // Set URL
     const char* post_url = "/api/v1/predict_a";
@@ -194,14 +173,14 @@ int post_request_with_float_data(void) {
 int main(void)
 {
     // Check WiFi connection
-    return wifi_connection_example(); // Connect WiFi
+    return wifi_connection_example();        // Connect WiFi
 
     // Check GET request example
-    // return get_request_example(); // Send GET request
+    //return get_request_example();          // Send GET request
 
     // Check POST request example
-    // return post_request_example(); // Send POST request
+    //return post_request_example();         // Send POST request
 
     // Check POST request with arbitrary float data
-    // return post_request_with_float_data();   // Send POST request with float data
+    //return post_request_with_float_data();  // Send POST request with float data
 }
