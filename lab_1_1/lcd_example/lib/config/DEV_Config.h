@@ -13,6 +13,10 @@
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/pwm.h"
@@ -49,5 +53,9 @@ uint8_t SPI4W_Read_Byte(uint8_t value);
 
 void Driver_Delay_ms(uint32_t xms);
 void Driver_Delay_us(uint32_t xus);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

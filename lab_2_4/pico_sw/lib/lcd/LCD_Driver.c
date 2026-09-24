@@ -23,12 +23,12 @@ function:
 *******************************************************************************/
 static void LCD_Reset(void)
 {
-    DEV_Digital_Write(LCD_RST_PIN,1);
-    Driver_Delay_ms(500);
-    DEV_Digital_Write(LCD_RST_PIN,0);
-    Driver_Delay_ms(500);
-    DEV_Digital_Write(LCD_RST_PIN,1);
-    Driver_Delay_ms(500);
+    DEV_Digital_Write(LCD_RST_PIN, 1);
+    Driver_Delay_ms(20);
+    DEV_Digital_Write(LCD_RST_PIN, 0);
+    Driver_Delay_ms(20);
+    DEV_Digital_Write(LCD_RST_PIN, 1);
+    Driver_Delay_ms(120);
 }
 void PWM_SetValue(uint16_t duty)
 {	
@@ -366,7 +366,6 @@ void LCD_Init(LCD_SCAN_DIR LCD_ScanDir, uint16_t LCD_BLval)
 	LCD_SetBackLight(LCD_BLval);
 	
 	LCD_SetGramScanWay(LCD_ScanDir);//Set the display scan and color transfer modes
-	Driver_Delay_ms(200);
 }
 
 /********************************************************************************
