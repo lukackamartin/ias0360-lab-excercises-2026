@@ -114,9 +114,9 @@ int main() {
 }
 ```
 
-## ML Model Development (TensorFlow / TFLite Micro)
+## ML Model Development (PyTorch / LiteRT / TFLite Micro)
 
-The image ships a Python venv (`/opt/venv`, already on `PATH`) with TensorFlow, OpenCV (headless), NumPy, scikit-learn, and JupyterLab for training and converting TinyML models to run on the Pico via TFLite Micro.
+The image ships a Python venv (`/opt/venv`, already on `PATH`) with PyTorch, torchvision, litert-torch (for converting PyTorch models to `.tflite`), ai-edge-litert (for running `.tflite` inference), OpenCV (headless), NumPy, scikit-learn, and JupyterLab for training and converting TinyML models to run on the Pico via TFLite Micro.
 
 To launch notebooks, from inside the container:
 
