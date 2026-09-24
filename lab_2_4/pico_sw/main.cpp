@@ -19,35 +19,24 @@
 #include "mnist_model_data.h"
 
 using namespace std;
-#define HALT_CORE_1() while (1) { tight_loop_contents(); }
 
 INFERENCE inference;
 Model ml_model;
 
-mutex_t mutex;  // Declare a mutex
-
-// run core1 loop that displays UI and handles user touch input
+// Core 1 entry that displays UI and handles user touch input
 void core1_entry() {
-    uint16_t cnt = 0;
     while (true) {
-      for (cnt = 1000; cnt > 2; cnt--)
-      {
-        LCD_SetBackLight(1000);
-
-        // pass the ML inputs, output, and semaphore
         TP_DrawBoard();
-      }
     }
 }
 
 int main(void)
 {
     System_Init();
-    mutex_init(&mutex);  // Initialize the mutex
 
-    sleep_ms(5000);
+    sleep_ms(100);
 
-    // initialize LCD display
+    // Initialize LCD display
     LCD_SCAN_DIR  lcd_scan_dir = SCAN_DIR_DFT;
     LCD_Init(lcd_scan_dir, 1000);
     TP_Init(lcd_scan_dir);
@@ -56,13 +45,13 @@ int main(void)
     reset_inference(&inference);
     init_gui();
 
-    // run core1 loop that handles user interface
+    // Run Core 1 loop that handles user interface
     multicore_launch_core1(core1_entry);
 
-    // initialize ML model
+    // Initialize ML model
     if (!ml_model.setup()) {
         printf("Failed to initialize ML model!\n");
-        HALT_CORE_1();
+        while (1) { tight_loop_contents(); }
     }
     printf("Model initialized\n");
 
@@ -70,10 +59,8 @@ int main(void)
         // Block the process until data being filled
         uint32_t g = multicore_fifo_pop_blocking();
 
-        // Acquire the mutex (blocking)
-        mutex_enter_blocking(&mutex);
-
         inference.IsProcessing = true;
+        __dmb();
 
         // Run inference on each of the DIGIT_INPUT_COUNT boxes the user drew.
         for (int index = 0; index < DIGIT_INPUT_COUNT; index++) {
@@ -101,15 +88,12 @@ int main(void)
               printf("Predicted: %d\n", result);
               inference.UserInputs[index].PredictedDigit = result;
           }
-          sleep_ms(200);
         }
 
         printf("Inference pass finished.\n");
 
+        __dmb();
         inference.IsProcessing = false;
-
-        // Return the resource
-        mutex_exit(&mutex);
     }
     return 0;
 }

@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/time.h"
-#include "pico/multicore.h"     // only used by main_4
-#include "pico/util/queue.h"    // only used by main_4
+#include "pico/multicore.h"  // only used by main_4
+#include "pico/util/queue.h"  // only used by main_4
 
 int main_1(void)
 {
@@ -72,7 +72,7 @@ int main_2(void)
         printf("ACC [mg-ish raw]: X=%d Y=%d Z=%d   |   GYRO [LSB]: X=%d Y=%d Z=%d   |   %.1f Hz\r\n",
                ax, ay, az, gx, gy, gz, hz);
 
-        // sleep_ms(5); // small delay to avoid spamming
+        //sleep_ms(5);  // small delay to avoid spamming
     }
 
     return 0;
@@ -135,15 +135,15 @@ static void core1_reader(void)
     // Usually one init on core0 is fine if both cores share the same hardware state,
     // but to be safe we at least check sensor here.
     // If needed, comment out the next line.
-    // imuInit(&type);
+    //imuInit(&type);
 
     uint32_t t_prev = (uint32_t)time_us_64();
 
     while (1) {
         IMU_ST_SENSOR_DATA stGyroRawData, stAccelRawData;
-        // int16_t gx, gy, gz, ax, ay, az;
-        // icm20948AccelFastRead(&ax, &ay, &az);
-        // icm20948GyroFastRead (&gx, &gy, &gz);
+        //int16_t gx, gy, gz, ax, ay, az;
+        //icm20948AccelFastRead(&ax, &ay, &az);
+        //icm20948GyroFastRead (&gx, &gy, &gz);
 
         imuDataAccGyrGet(&stGyroRawData, &stAccelRawData);
 
@@ -154,7 +154,7 @@ static void core1_reader(void)
         queue_add_blocking(&sample_q, &s);
 
         // (Optional) pace the producer slightly if needed
-        // sleep_us(500); // ~2 kHz -> uncomment to throttle
+        //sleep_us(500);  // ~2 kHz -> uncomment to throttle
     }
 }
 
@@ -194,4 +194,10 @@ int main_4(void)
     }
 
     return 0;
+}
+
+int main(void)
+{
+    // Choose which IMU example to run: main_1, main_2, main_3, or main_4
+    return main_1();
 }

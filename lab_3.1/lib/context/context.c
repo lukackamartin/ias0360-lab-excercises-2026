@@ -1,7 +1,8 @@
+#include <stdio.h>
 #include "pico/stdlib.h"
 #include "context.h"
 #include "hardware/watchdog.h"
-#include "pico/platform.h"            // __disable_irq()
+#include "pico/platform.h"  // __disable_irq()
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/m0plus.h"
 #include "hardware/structs/scb.h"
@@ -25,7 +26,7 @@ void jump_to_image(uint32_t offset)
     uint32_t msp   = vt[0];
     uint32_t reset = vt[1];
     __asm volatile("dsb 0xF; isb 0xF" ::: "memory");
-    scb_hw->vtor = app_base;                // VTOR without CMSIS
+    scb_hw->vtor = app_base;  // VTOR without CMSIS
     __asm volatile("dsb 0xF; isb 0xF" ::: "memory");
     __asm volatile("msr msp, %0" :: "r"(msp) : "memory");
     __asm volatile ("cpsie i" ::: "memory");

@@ -1,4 +1,4 @@
-﻿#include "LCD_Driver.h"
+#include "LCD_Driver.h"
 #include "LCD_Touch.h"
 #include "LCD_GUI.h"
 #include "DEV_Config.h"
@@ -17,14 +17,8 @@ int main(void)
 	LCD_SCAN_DIR bmp_scan_dir = D2U_R2L;
 	TP_GetAdFac();
 	TP_Dialog();
-	uint16_t cnt=0;
 	while(1){
-		
-		for(cnt=1000;cnt>2;cnt--)
-		{
-			LCD_SetBackLight(1000);
-			TP_DrawBoard();
-		}
+		TP_DrawBoard();
 	}
 	return 0;
 }
