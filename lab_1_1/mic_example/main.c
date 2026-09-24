@@ -37,17 +37,18 @@ void on_pdm_samples_ready()
     samples_read = pdm_microphone_read(sample_buffer, 256);
 }
 
-int main( void )
+int main(void)
 {
-    // initialize stdio and wait for USB CDC connect
     stdio_init_all();
-    while (!tud_cdc_connected()) {
-        tight_loop_contents();
+
+    // Wait up to 2 seconds for USB CDC connection
+    for (int i = 0; i < 200 && !tud_cdc_connected(); i++) {
+        sleep_ms(10);
     }
 
     printf("hello PDM microphone\n");
 
-    // initialize the PDM microphone
+    // Initialize the PDM microphone
     if (pdm_microphone_init(&config) < 0) {
         printf("PDM microphone initialization failed!\n");
         while (1) { tight_loop_contents(); }

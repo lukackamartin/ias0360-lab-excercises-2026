@@ -11,9 +11,9 @@
 #define PATH_MAX_LEN 256
 
 // --------- Globals (FatFs requires the FS to outlive the mount) ----------
-static FATFS fs;                 // must be static/global (lives as long as the mount)
-static sd_card_t *g_sd = NULL;   // active SD card
-static const char *g_drive = NULL; // typically "0:"
+static FATFS fs;                    // must be static/global (lives as long as the mount)
+static sd_card_t *g_sd = NULL;      // active SD card
+static const char *g_drive = NULL;  // typically "0:"
 
 // ------------------------- Utility / Error -------------------------------
 static void die(FRESULT fr, const char *op) {
@@ -28,7 +28,7 @@ static void loop_forever_msg(const char *msg) {
 
 static void join_path(char *out, size_t out_sz, const char *drive, const char *rel) {
     // drive = "0:" or "0:/", ensure exactly one slash when joining
-    if (rel && rel[0] == '/') rel++; // avoid double slashes
+    if (rel && rel[0] == '/') rel++;  // avoid double slashes
     if (drive && drive[strlen(drive) - 1] == '/')
         snprintf(out, out_sz, "%s%s", drive, rel ? rel : "");
     else
@@ -58,7 +58,7 @@ static bool sd_init_and_mount(void) {
     printf("f_mount -> %s (%d)\n", FRESULT_str(fr), fr);
 
     if (fr == FR_NO_FILESYSTEM) {
-        BYTE work[4096]; // >= FF_MAX_SS
+        static BYTE work[4096];  // >= FF_MAX_SS (static to avoid stack overflow)
         MKFS_PARM opt = { FM_FAT | FM_SFD, 0, 0, 0, 0 };
         fr = f_mkfs(g_drive, &opt, work, sizeof work);
         printf("f_mkfs -> %s (%d)\n", FRESULT_str(fr), fr);
@@ -87,7 +87,7 @@ static FRESULT write_to_file(FIL *file, const void *data, UINT len, UINT *bytes_
     *bytes_written = 0;
     FRESULT fr = f_write(file, data, len, bytes_written);
     if (fr == FR_OK) {
-        fr = f_sync(file); // ensure data hits the card
+        fr = f_sync(file);  // ensure data hits the card
     }
     return fr;
 }
@@ -118,7 +118,7 @@ static FRESULT list_dir_recursive(const char *path, list_stats_t *stats) {
             printf("f_readdir('%s') -> %s (%d)\n", path, FRESULT_str(fr), fr);
             break;
         }
-        if (fno.fname[0] == '\0') break; // end of directory
+        if (fno.fname[0] == '\0') break;  // end of directory
 
         if (is_dot_or_dotdot(fno.fname)) continue;
 
@@ -145,7 +145,7 @@ static FRESULT list_dir_recursive(const char *path, list_stats_t *stats) {
 static FRESULT check_and_list_files(const char *root_drive) {
     // Build root path "0:/"
     char root[PATH_MAX_LEN];
-    join_path(root, sizeof root, root_drive, ""); // ensures a trailing slash when we add children
+    join_path(root, sizeof root, root_drive, "");  // ensures a trailing slash when we add children
 
     list_stats_t stats = {0};
     printf("\n--- SD Card File Listing for '%s' ---\n", root_drive);
