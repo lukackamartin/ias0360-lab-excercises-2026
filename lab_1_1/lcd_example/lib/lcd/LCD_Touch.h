@@ -13,24 +13,25 @@
 #define TP_PRESS_DOWN           0x80
 #define TP_PRESSED              0x40
 
-//Touch screen structure
+// Touch screen structure
 typedef struct {
 	POINT Xpoint0;
 	POINT Ypoint0;
 	POINT Xpoint;
 	POINT Ypoint;
+	uint16_t Z1;
 	uint8_t chStatus;
 	uint8_t chType;
 	int16_t iXoff;
 	int16_t iYoff;
 	float fXfac;
 	float fYfac;
-	//Select the coordinates of the XPT2046 touch \
-	  screen relative to what scan direction
+	// Select the coordinates of the XPT2046 touch
+	// screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
-//Brush structure
+// Brush structure
 typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
@@ -44,5 +45,6 @@ void TP_Adjust(void);
 void TP_Dialog(void);
 void TP_Save(void);
 void TP_DrawBoard(void);
+uint16_t TP_GetPressure(void);
 void TP_Init( LCD_SCAN_DIR Lcd_ScanDir );
 #endif

@@ -47,7 +47,7 @@ void DEV_GPIO_Init(void)
     // MicroSD socket is connected via 4-bit SDIO (GP5, GP18..GP22).
     // GP22 is SD_D3; host pull-up per SD Spec 4.3.13 for SD mode entry.
     gpio_pull_up(SD_CS_PIN);   // DAT3/CD host pull-up per SD spec 4.3.13
-	//gpio_set_pulls(TP_IRQ_PIN,true,false);
+    gpio_pull_up(TP_IRQ_PIN);  // touch interrupt pull-up (onboard R7 100k parallel)
 
     DEV_Digital_Write(TP_CS_PIN, 1);
     DEV_Digital_Write(LCD_CS_PIN, 1);
