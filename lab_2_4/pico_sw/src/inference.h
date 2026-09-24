@@ -7,10 +7,9 @@
 #include "pico/multicore.h"
 // #include "hardware/irq.h"
 
-
 #define DIGIT_SIZE 28
 #define NUM_BOX 4
 
 void inference_test(void);
 
-#endif // TFLITE_INFERENCE_TEST_INFERENCE_H_
+#endif  // TFLITE_INFERENCE_TEST_INFERENCE_H_

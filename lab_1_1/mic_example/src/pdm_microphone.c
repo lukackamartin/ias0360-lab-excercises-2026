@@ -2,7 +2,7 @@
  * Copyright (c) 2021 Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
- * 
+ *
  */
 
 #include <stdlib.h>
@@ -51,7 +51,7 @@ int pdm_microphone_init(const struct pdm_microphone_config* config) {
         if (pdm_mic.raw_buffer[i] == NULL) {
             pdm_microphone_deinit();
 
-            return -1;   
+            return -1;
         }
     }
 
@@ -176,20 +176,20 @@ void pdm_microphone_stop() {
 }
 
 static void pdm_dma_handler() {
-    // clear IRQ
+    // Clear IRQ
     if (pdm_mic.dma_irq == DMA_IRQ_0) {
         dma_hw->ints0 = (1u << pdm_mic.dma_channel);
     } else if (pdm_mic.dma_irq == DMA_IRQ_1) {
         dma_hw->ints1 = (1u << pdm_mic.dma_channel);
     }
 
-    // get the current buffer index
+    // Get the current buffer index
     pdm_mic.raw_buffer_read_index = pdm_mic.raw_buffer_write_index;
 
-    // get the next capture index to send the dma to start
+    // Get the next capture index to send the dma to start
     pdm_mic.raw_buffer_write_index = (pdm_mic.raw_buffer_write_index + 1) % PDM_RAW_BUFFER_COUNT;
 
-    // give the channel a new buffer to write to and re-trigger it
+    // Give the channel a new buffer to write to and re-trigger it
     dma_channel_transfer_to_buffer_now(
         pdm_mic.dma_channel,
         pdm_mic.raw_buffer[pdm_mic.raw_buffer_write_index],

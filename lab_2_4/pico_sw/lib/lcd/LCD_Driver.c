@@ -1,15 +1,13 @@
 /*****************************************************************************
-* | File      	:	LCD_Driver.c
-* | Author      :   Waveshare team
-* | Function    :	LCD Drive function
-* | Info        :
-*   Image scanning
-*      Please use progressive scanning to generate images or fonts
+* | File        : LCD_Driver.c
+* | Author      : Waveshare team
+* | Function    : LCD Drive function
+* | Info        : Image scanning: Please use progressive scanning to
+*                 generate images or fonts
 *----------------
-* |	This version:   V1.0
-* | Date        :   2018-01-11
-* | Info        :   Basic version
-*
+* | This version: V1.0
+* | Date        : 2018-01-11
+* | Info        : Basic version
 ******************************************************************************/
 
 /**************************Intermediate driver layer**************************/
@@ -17,10 +15,9 @@
 
 LCD_DIS sLCD_DIS;
 uint8_t id;
-/*******************************************************************************
-function:
-	Hardware reset
-*******************************************************************************/
+/********************************************************************************
+function: Hardware reset
+********************************************************************************/
 static void LCD_Reset(void)
 {
     DEV_Digital_Write(LCD_RST_PIN, 1);
@@ -31,20 +28,19 @@ static void LCD_Reset(void)
     Driver_Delay_ms(120);
 }
 void PWM_SetValue(uint16_t duty)
-{	
+{
 	uint slice_num = pwm_gpio_to_slice_num(LCD_BKL_PIN);
 	pwm_set_wrap(slice_num, 10000);
-	pwm_set_chan_level(slice_num, PWM_CHAN_B, duty*10);
+	pwm_set_chan_level(slice_num, PWM_CHAN_B, duty * 10);
 	pwm_set_enabled(slice_num, true);
 }
 void LCD_SetBackLight(uint16_t value)
 {
 	PWM_SetValue(value);
 }
-/*******************************************************************************
-function:
-		Write register address and data
-*******************************************************************************/
+/********************************************************************************
+function: Write register address and data
+********************************************************************************/
 void LCD_WriteReg(uint8_t Reg)
 {
     DEV_Digital_Write(LCD_DC_PIN,0);
@@ -67,13 +63,12 @@ void LCD_WriteData(uint16_t Data)
 		SPI4W_Write_Byte(Data & 0XFF);
 		DEV_Digital_Write(LCD_CS_PIN,1);
 	}
-    
+
 }
 
-/*******************************************************************************
-function:
-		Write register data
-*******************************************************************************/
+/********************************************************************************
+function: Write register data
+********************************************************************************/
 static void LCD_Write_AllData(uint16_t Data, uint32_t DataLen)
 {
     uint32_t i;
@@ -86,10 +81,9 @@ static void LCD_Write_AllData(uint16_t Data, uint32_t DataLen)
 	DEV_Digital_Write(LCD_CS_PIN,1);
 }
 
-/*******************************************************************************
-function:
-		Common register initialization
-*******************************************************************************/
+/********************************************************************************
+function: Common register initialization
+********************************************************************************/
 static void LCD_InitReg(void)
 {
 	id = LCD_Read_Id();
@@ -158,16 +152,16 @@ static void LCD_InitReg(void)
 		LCD_WriteReg(0x29);
 	}else{
 		LCD_WriteReg(0x21);
-		LCD_WriteReg(0xC2);	//Normal mode, increase can change the display quality, while increasing power consumption
+		LCD_WriteReg(0xC2);  // normal mode, increase can change the display quality, while increasing power consumption
 		LCD_WriteData(0x33);
 		LCD_WriteReg(0XC5);
 		LCD_WriteData(0x00);
-		LCD_WriteData(0x1e);//VCM_REG[7:0]. <=0X80.
+		LCD_WriteData(0x1e);  // VCM_REG[7:0]. <=0X80
 		LCD_WriteData(0x80);
-		LCD_WriteReg(0xB1);//Sets the frame frequency of full color normal mode
-		LCD_WriteData(0xB0);//0XB0 =70HZ, <=0XB0.0xA0=62HZ
+		LCD_WriteReg(0xB1);  // sets the frame frequency of full color normal mode
+		LCD_WriteData(0xB0);  // 0XB0 =70HZ, <=0XB0.0xA0=62HZ
 		LCD_WriteReg(0x36);
-		LCD_WriteData(0x28); //2 DOT FRAME MODE,F<=70HZ.
+		LCD_WriteData(0x28);  // 2 DOT FRAME MODE,F<=70HZ
 		LCD_WriteReg(0XE0);
 		LCD_WriteData(0x0);
 		LCD_WriteData(0x13);
@@ -183,7 +177,7 @@ static void LCD_InitReg(void)
 		LCD_WriteData(0x06);
 		LCD_WriteData(0x30);
 		LCD_WriteData(0x3e);
-		LCD_WriteData(0x0f);		
+		LCD_WriteData(0x0f);
 		LCD_WriteReg(0XE1);
 		LCD_WriteData(0x0);
 		LCD_WriteData(0x13);
@@ -200,81 +194,81 @@ static void LCD_InitReg(void)
 		LCD_WriteData(0x31);
 		LCD_WriteData(0x37);
 		LCD_WriteData(0x0f);
-		LCD_WriteReg(0X3A);	//Set Interface Pixel Format
+		LCD_WriteReg(0X3A);  // set Interface Pixel Format
 		LCD_WriteData(0x55);
-		LCD_WriteReg(0x11);//sleep out
+		LCD_WriteReg(0x11);  // sleep out
 		Driver_Delay_ms(120);
-		LCD_WriteReg(0x29);//Turn on the LCD display
+		LCD_WriteReg(0x29);  // turn on the LCD display
 	}
 }
 
 /********************************************************************************
-function:	Set the display scan and color transfer modes
+function: Set the display scan and color transfer modes
 parameter:
-		Scan_dir   :   Scan direction
-		Colorchose :   RGB or GBR color format
+    Scan_dir   : Scan direction
+    Colorchose : RGB or GBR color format
 ********************************************************************************/
 void LCD_SetGramScanWay(LCD_SCAN_DIR Scan_dir)
 {
-    uint16_t MemoryAccessReg_Data = 0; //addr:0x36
-    uint16_t DisFunReg_Data = 0; //addr:0xB6
+    uint16_t MemoryAccessReg_Data = 0;  // addr:0x36
+    uint16_t DisFunReg_Data = 0;        // addr:0xB6
 
 	if(LCD_2_8 == id){
 		/*		it will support later		*/
-		//Pico-ResTouch-LCD-2.8
-		// switch(Scan_dir){
+		// Pico-ResTouch-LCD-2.8
+		// switch (Scan_dir) {
 			// case L2R_U2D:
-				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 RGB = 0 MH = 0 NN = 0 NN = 0*/
+				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 RGB = 0 MH = 0 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0x00;
 				// break;
 			// case L2R_D2U:
-				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 1 RGB = 0 MH = 0 NN = 0 NN = 0*/
+				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 1 RGB = 0 MH = 0 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0x10;
 				// break;
-			// case R2L_U2D: 
-				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 RGB = 0 MH = 1 NN = 0 NN = 0*/
+			// case R2L_U2D:
+				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 RGB = 0 MH = 1 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0x04;
 				// break;
-			// case R2L_D2U: 
-				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 1 RGB = 0 MH = 1 NN = 0 NN = 0*/
+			// case R2L_D2U:
+				// /* Memory access control: MY = 0, MX = 0, MV = 0, ML = 1 RGB = 0 MH = 1 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0x14;
 				// break;
-			// case U2D_L2R: //0X2
-				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 0 RGB = 0 MH = 0 NN = 0 NN = 0*/
+			// case U2D_L2R: // 0X2
+				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 0 RGB = 0 MH = 0 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0xA0;
 				// break;
-			// case U2D_R2L: //0X6
-				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 0 RGB = 0 MH = 1 NN = 0 NN = 0*/
+			// case U2D_R2L: // 0X6
+				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 0 RGB = 0 MH = 1 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0xA4;
 				// break;
-			// case D2U_L2R: //0XA
-				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 1 RGB = 0 MH = 0 NN = 0 NN = 0*/
+			// case D2U_L2R: // 0XA
+				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 1 RGB = 0 MH = 0 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0xB0;
 				// break;
-			// case D2U_R2L: //0XE
-				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 1 RGB = 0 MH = 1 NN = 0 NN = 0*/
+			// case D2U_R2L: // 0XE
+				// /* Memory access control: MY = 1, MX = 0, MV = 1, ML = 1 RGB = 0 MH = 1 NN = 0 NN = 0 */
 				// MemoryAccessReg_Data = 0xB4;
 				// break;
 		// }
 		sLCD_DIS.LCD_Scan_Dir = Scan_dir;
-		//Get GRAM and LCD width and height
-		//240*320,vertical default
-		// if(Scan_dir == L2R_U2D || Scan_dir == L2R_D2U || Scan_dir == R2L_U2D || Scan_dir == R2L_D2U) {
-			// sLCD_DIS.LCD_Dis_Column	= LCD_2_8_WIDTH ;
-			// sLCD_DIS.LCD_Dis_Page =  LCD_2_8_HEIGHT;
+		// Get GRAM and LCD width and height
+		// 240*320, vertical default
+		// if (Scan_dir == L2R_U2D || Scan_dir == L2R_D2U || Scan_dir == R2L_U2D || Scan_dir == R2L_D2U) {
+			// sLCD_DIS.LCD_Dis_Column	= LCD_2_8_WIDTH;
+			// sLCD_DIS.LCD_Dis_Page	= LCD_2_8_HEIGHT;
 		// } else {
-			// sLCD_DIS.LCD_Dis_Column	=  LCD_2_8_HEIGHT;
-			// sLCD_DIS.LCD_Dis_Page = LCD_2_8_WIDTH ;
+			// sLCD_DIS.LCD_Dis_Column	= LCD_2_8_HEIGHT;
+			// sLCD_DIS.LCD_Dis_Page	= LCD_2_8_WIDTH;
 		// }
 
-		sLCD_DIS.LCD_Dis_Column	= LCD_2_8_WIDTH ;
-		sLCD_DIS.LCD_Dis_Page =  LCD_2_8_HEIGHT;
-		
+		sLCD_DIS.LCD_Dis_Column	= LCD_2_8_WIDTH;
+		sLCD_DIS.LCD_Dis_Page	= LCD_2_8_HEIGHT;
+
 		LCD_WriteReg(0x36);
 		// LCD_WriteData(MemoryAccessReg_Data);
 		LCD_WriteData(0x00);
 	}else{
-		//Pico-ResTouch-LCD-3.5
+		// Pico-ResTouch-LCD-3.5
 		// Gets the scan direction of GRAM
 		switch (Scan_dir) {
 		case L2R_U2D:
@@ -289,37 +283,37 @@ void LCD_SetGramScanWay(LCD_SCAN_DIR Scan_dir)
 			MemoryAccessReg_Data = 0x08;
 			DisFunReg_Data = 0x62;
 			break;
-		case R2L_U2D: 
+		case R2L_U2D:
 			/* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 */
 			/* Display Function control: NN = 0, GS = 0, SS = 0, SM = 0	*/
 			MemoryAccessReg_Data = 0x08;
 			DisFunReg_Data = 0x02;
 			break;
-		case R2L_D2U: 
+		case R2L_D2U:
 			/* Memory access control: MY = 0, MX = 0, MV = 0, ML = 0 */
 			/* Display Function control: NN = 0, GS = 1, SS = 0, SM = 0	*/
 			MemoryAccessReg_Data = 0x08;
 			DisFunReg_Data = 0x42;
 			break;
-		case U2D_L2R: //0X2
+		case U2D_L2R:  // 0X2
 			/* Memory access control: MY = 0, MX = 0, MV = 1, ML = 0 	X-Y Exchange*/
 			/* Display Function control: NN = 0, GS = 0, SS = 1, SM = 0	*/
 			MemoryAccessReg_Data = 0x28;
 			DisFunReg_Data = 0x22;
 			break;
-		case U2D_R2L: //0X6
+		case U2D_R2L:  // 0X6
 			/* Memory access control: MY = 0, MX = 0, MV = 1, ML = 0 	X-Y Exchange*/
 			/* Display Function control: NN = 0, GS = 0, SS = 0, SM = 0	*/
 			MemoryAccessReg_Data = 0x28;
 			DisFunReg_Data = 0x02;
 			break;
-		case D2U_L2R: //0XA
+		case D2U_L2R:  // 0XA
 			/* Memory access control: MY = 0, MX = 0, MV = 1, ML = 0 	X-Y Exchange*/
 			/* Display Function control: NN = 0, GS = 1, SS = 1, SM = 0	*/
 			MemoryAccessReg_Data = 0x28;
 			DisFunReg_Data = 0x62;
 			break;
-		case D2U_R2L: //0XE
+		case D2U_R2L:  // 0XE
 			/* Memory access control: MY = 0, MX = 0, MV = 1, ML = 0 	X-Y Exchange*/
 			/* Display Function control: NN = 0, GS = 1, SS = 0, SM = 0	*/
 			MemoryAccessReg_Data = 0x28;
@@ -327,11 +321,11 @@ void LCD_SetGramScanWay(LCD_SCAN_DIR Scan_dir)
 			break;
 		}
 
-		//Get the screen scan direction
+		// Get the screen scan direction
 		sLCD_DIS.LCD_Scan_Dir = Scan_dir;
 
-		//Get GRAM and LCD width and height
-		//480*320,horizontal default
+		// Get GRAM and LCD width and height
+		// 480*320, horizontal default
 		if(Scan_dir == L2R_U2D || Scan_dir == L2R_D2U || Scan_dir == R2L_U2D || Scan_dir == R2L_D2U) {
 			sLCD_DIS.LCD_Dis_Column	= LCD_3_5_HEIGHT ;
 			sLCD_DIS.LCD_Dis_Page = LCD_3_5_WIDTH ;
@@ -351,42 +345,41 @@ void LCD_SetGramScanWay(LCD_SCAN_DIR Scan_dir)
 }
 
 /********************************************************************************
-function:
-	initialization
+function: initialization
 ********************************************************************************/
 void LCD_Init(LCD_SCAN_DIR LCD_ScanDir, uint16_t LCD_BLval)
 {
-    
-    LCD_Reset();//Hardware reset
 
-    LCD_InitReg();//Set the initialization register
-	
+    LCD_Reset();  // hardware reset
+
+    LCD_InitReg();  // set the initialization register
+
 	if(LCD_BLval > 1000)
 		LCD_BLval = 1000;
 	LCD_SetBackLight(LCD_BLval);
-	
-	LCD_SetGramScanWay(LCD_ScanDir);//Set the display scan and color transfer modes
+
+	LCD_SetGramScanWay(LCD_ScanDir);  // set the display scan and color transfer modes
 }
 
 /********************************************************************************
-function:	Sets the start position and size of the display area
+function: Sets the start position and size of the display area
 parameter:
-	Xstart 	:   X direction Start coordinates
-	Ystart  :   Y direction Start coordinates
-	Xend    :   X direction end coordinates
-	Yend    :   Y direction end coordinates
+    Xstart : X direction Start coordinates
+    Ystart : Y direction Start coordinates
+    Xend   : X direction end coordinates
+    Yend   : Y direction end coordinates
 ********************************************************************************/
 void LCD_SetWindow(POINT Xstart, POINT Ystart,	POINT Xend, POINT Yend)
-{	
+{
 
-	//set the X coordinates
+	// Set the X coordinates
 	LCD_WriteReg(0x2A);
-	LCD_WriteData(Xstart >> 8);	 		//Set the horizontal starting point to the high octet
-	LCD_WriteData(Xstart & 0xff);	 	//Set the horizontal starting point to the low octet
-	LCD_WriteData((Xend - 1) >> 8);		//Set the horizontal end to the high octet
-	LCD_WriteData((Xend - 1) & 0xff);	//Set the horizontal end to the low octet
+	LCD_WriteData(Xstart >> 8);  // set the horizontal starting point to the high octet
+	LCD_WriteData(Xstart & 0xff);  // set the horizontal starting point to the low octet
+	LCD_WriteData((Xend - 1) >> 8);  // set the horizontal end to the high octet
+	LCD_WriteData((Xend - 1) & 0xff);  // set the horizontal end to the low octet
 
-	//set the Y coordinates
+	// Set the Y coordinates
 	LCD_WriteReg(0x2B);
 	LCD_WriteData(Ystart >> 8);
 	LCD_WriteData(Ystart & 0xff );
@@ -397,10 +390,10 @@ void LCD_SetWindow(POINT Xstart, POINT Ystart,	POINT Xend, POINT Yend)
 }
 
 /********************************************************************************
-function:	Set the display point (Xpoint, Ypoint)
+function: Set the display point (Xpoint, Ypoint)
 parameter:
-	xStart :   X direction Start coordinates
-	xEnd   :   X direction end coordinates
+    xStart : X direction Start coordinates
+    xEnd   : X direction end coordinates
 ********************************************************************************/
 void LCD_SetCursor(POINT Xpoint, POINT Ypoint)
 {
@@ -408,21 +401,21 @@ void LCD_SetCursor(POINT Xpoint, POINT Ypoint)
 }
 
 /********************************************************************************
-function:	Set show color
+function: Set show color
 parameter:
-		Color  :   Set show color,16-bit depth
+    Color : Set show color, 16-bit depth
 ********************************************************************************/
-void LCD_SetColor(COLOR Color , POINT Xpoint, POINT Ypoint)
+void LCD_SetColor(COLOR Color, POINT Xpoint, POINT Ypoint)
 {
     LCD_Write_AllData(Color , (uint32_t)Xpoint * (uint32_t)Ypoint);
 }
 
 /********************************************************************************
-function:	Point (Xpoint, Ypoint) Fill the color
+function: Point (Xpoint, Ypoint) Fill the color
 parameter:
-	Xpoint :   The x coordinate of the point
-	Ypoint :   The y coordinate of the point
-	Color  :   Set the color
+    Xpoint : The x coordinate of the point
+    Ypoint : The y coordinate of the point
+    Color  : Set the color
 ********************************************************************************/
 void LCD_SetPointlColor( POINT Xpoint, POINT Ypoint, COLOR Color)
 {
@@ -433,25 +426,24 @@ void LCD_SetPointlColor( POINT Xpoint, POINT Ypoint, COLOR Color)
 }
 
 /********************************************************************************
-function:	Fill the area with the color
+function: Fill the area with the color
 parameter:
-	Xstart :   Start point x coordinate
-	Ystart :   Start point y coordinate
-	Xend   :   End point coordinates
-	Yend   :   End point coordinates
-	Color  :   Set the color
+    Xstart : Start point x coordinate
+    Ystart : Start point y coordinate
+    Xend   : End point coordinates
+    Yend   : End point coordinates
+    Color  : Set the color
 ********************************************************************************/
 void LCD_SetArealColor(POINT Xstart, POINT Ystart, POINT Xend, POINT Yend,	COLOR Color)
 {
     if((Xend > Xstart) && (Yend > Ystart)) {
-        LCD_SetWindow(Xstart , Ystart , Xend , Yend  );
-        LCD_SetColor ( Color , Xend - Xstart, Yend - Ystart);
+        LCD_SetWindow(Xstart, Ystart, Xend, Yend);
+        LCD_SetColor(Color, Xend - Xstart, Yend - Ystart);
     }
 }
 
 /********************************************************************************
-function:
-			Clear screen
+function: Clear screen
 ********************************************************************************/
 void LCD_Clear(COLOR  Color)
 {

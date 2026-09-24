@@ -13,7 +13,6 @@
 #define TP_PRESS_DOWN           0x80
 #define TP_PRESSED              0x40
 
-
 // ---- Capture area (the black box) ------------------------------------------
 // 480×320
 #define LCD_W 480
@@ -30,7 +29,7 @@ extern LCD_DIS sLCD_DIS;
 extern uint8_t id;
 
 enum State {
-    DEFAULT,    
+    DEFAULT,
 	PROCESSING,
 	SUCCESS
 };
@@ -49,7 +48,7 @@ typedef struct {
 	float fXfac;
 	float fYfac;
 	// Select the coordinates of the XPT2046 touch
-	// screen relative to what scan direction
+	// Screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
@@ -58,7 +57,7 @@ typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
 	COLOR Color;
-	DOT_PIXEL DotPixel; 
+	DOT_PIXEL DotPixel;
 }TP_DRAW;
 
 void TP_GetAdFac(void);

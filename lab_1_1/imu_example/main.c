@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/time.h"
-#include "pico/multicore.h"  // only used by main_4
+#include "pico/multicore.h"   // only used by main_4
 #include "pico/util/queue.h"  // only used by main_4
 
 int main_1(void)
@@ -100,11 +100,11 @@ int main_3(void)
         icm20948AccelFastRead(&ax, &ay, &az);
         icm20948GyroFastRead (&gx, &gy, &gz);
 
-        // // Option B: if you prefer the wrapper:
+        // Option B: if you prefer the wrapper:
         // IMU_ST_SENSOR_DATA g, a;
-        // imuDataOnlyGet(&g, &a);
-        // gx=g.s16X; gy=g.s16Y; gz=g.s16Z;
-        // ax=a.s16X; ay=a.s16Y; az=a.s16Z;
+        //imuDataOnlyGet(&g, &a);
+        //gx = g.s16X; gy = g.s16Y; gz = g.s16Z;
+        //ax = a.s16X; ay = a.s16Y; az = a.s16Z;
 
         uint64_t t_now = time_us_64();
         uint64_t dt_us = (t_now - t_prev);

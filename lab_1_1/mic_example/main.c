@@ -5,7 +5,7 @@
 #include "pico/pdm_microphone.h"
 #include "tusb.h"
 
-// configuration
+// Configuration
 const struct pdm_microphone_config config = {
     // GPIO pin for the PDM DAT signal
     .gpio_data = 2,
@@ -19,21 +19,21 @@ const struct pdm_microphone_config config = {
     // PIO State Machine instance to use
     .pio_sm = 0,
 
-    // sample rate in Hz
+    // Sample rate in Hz
     .sample_rate = 8000,
 
-    // number of samples to buffer
+    // Number of samples to buffer
     .sample_buffer_size = 256,
 };
 
-// variables
+// Variables
 int16_t sample_buffer[256];
 volatile int samples_read = 0;
 
 void on_pdm_samples_ready()
 {
-    // callback from library when all the samples in the library
-    // internal sample buffer are ready for reading 
+    // Callback from library when all the samples in the library
+    // internal sample buffer are ready for reading
     samples_read = pdm_microphone_read(sample_buffer, 256);
 }
 
@@ -54,25 +54,25 @@ int main(void)
         while (1) { tight_loop_contents(); }
     }
 
-    // set callback that is called when all the samples in the library
+    // Set callback that is called when all the samples in the library
     // internal sample buffer are ready for reading
     pdm_microphone_set_samples_ready_handler(on_pdm_samples_ready);
-    
-     // start capturing data from the PDM microphone
+
+     // Start capturing data from the PDM microphone
     if (pdm_microphone_start() < 0) {
         printf("PDM microphone start failed!\n");
         while (1) { tight_loop_contents(); }
     }
 
     while (1) {
-        // wait for new samples
+        // Wait for new samples
         while (samples_read == 0) { tight_loop_contents(); }
 
-        // store and clear the samples read from the callback
+        // Store and clear the samples read from the callback
         int sample_count = samples_read;
         samples_read = 0;
-        
-        // loop through any new collected samples
+
+        // Loop through any new collected samples
         for (int i = 0; i < sample_count; i++) {
             printf("%d\n", sample_buffer[i]);
         }

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <vector>
-#include <cstring> 
+#include <cstring>
 #include <sstream>
 
 #include "pico/stdlib.h"
@@ -15,7 +15,7 @@
 #include "request.hpp"
 
 static inline void debug_unpause_timer(void) {
-    timer_hw->dbgpause = 0; 
+    timer_hw->dbgpause = 0;
 }
 
 // Connect WiFi
@@ -46,7 +46,7 @@ int wifi_connection_example(void) {
 // Send GET request
 int get_request_example(void) {
 	stdio_init_all();
-    debug_unpause_timer();  
+    debug_unpause_timer();
 
     if (cyw43_arch_init()) {
         printf("Wi-Fi chip init failed\n");
@@ -173,14 +173,14 @@ int post_request_with_float_data(void) {
 int main(void)
 {
     // Check WiFi connection
-    return wifi_connection_example();        // Connect WiFi
+    return wifi_connection_example();        // connect WiFi
 
     // Check GET request example
-    //return get_request_example();          // Send GET request
+    // return get_request_example();          // Send GET request
 
     // Check POST request example
-    //return post_request_example();         // Send POST request
+    // return post_request_example();         // Send POST request
 
     // Check POST request with arbitrary float data
-    //return post_request_with_float_data();  // Send POST request with float data
+    // return post_request_with_float_data();  // Send POST request with float data
 }

@@ -4,8 +4,8 @@
 #include "LCD_utils.hpp"
 
 Button::Button(int x, int y, int w, int h, const char* label,
-               DOT_PIXEL font_size, 
-               hex_color_t bg_color, 
+               DOT_PIXEL font_size,
+               hex_color_t bg_color,
                hex_color_t fg_color,
                uint8_t letter_offset_x, uint8_t letter_offset_y)
     : x_(x), y_(y), w_(w), h_(h),
@@ -30,7 +30,7 @@ bool Button::is_pressed(int tx, int ty) {
 
     uint32_t current_time = to_ms_since_boot(get_absolute_time());
     if (current_time - button_pressed_at_ < IGNORE_INTERVAL_MS) {
-        // prevent debounce
+        // Prevent debounce
         return false;
     }
     button_pressed_at_ = current_time;
@@ -49,7 +49,6 @@ void Button::call_cb() {
         callback_();
     }
 }
-
 
 void TextField::clear_data(void) {
     std::fill(binary_data_.begin(), binary_data_.end(), 0);

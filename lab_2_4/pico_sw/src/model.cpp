@@ -11,7 +11,6 @@
 // TODO 4: Import your model data header (see models/mnist_model_data.cpp --
 // its declarations live in mnist_model_data.h).
 
-
 Model::Model() :
     model(nullptr),
     interpreter(nullptr),
@@ -58,7 +57,6 @@ int Model::setup()
   // If AllocateTensors() below fails with a "Didn't find op" error, that
   // tells you exactly which op is still missing here.
 
-
   static uint8_t tensor_arena[arena_size];
   // Build an interpreter to run the model with.
   // NOLINTNEXTLINE(runtime-global-variables)
@@ -69,7 +67,6 @@ int Model::setup()
   // TODO 8: Allocate tensors (interpreter->AllocateTensors()), check the
   // returned TfLiteStatus, and report+return 0 on failure like the check
   // above does for the schema version.
-
 
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
@@ -89,11 +86,11 @@ bool Model::set_input_image(const uint8_t* pixels) {
   }
 
   // TODO 11: For each of the kMaxImageSize pixels:
-  //   1. Normalize the raw 0-255 pixel to [0, 1] (matching how training
-  //      data was normalized in the Lab 2.2 notebook -- pixel / 255.0).
-  //   2. Quantize it into the tensor's int8 range using
-  //      round(normalized / input_scale_) + input_zero_point_.
-  //   3. Clamp to [-128, 127] and store into input->data.int8[i].
+  //   First, normalize the raw 0-255 pixel to [0, 1] (matching how training
+  //     data was normalized in the Lab 2.2 notebook -- pixel / 255.0).
+  //   Next, quantize it into the tensor's int8 range using
+  //     round(normalized / input_scale_) + input_zero_point_.
+  //   Finally, clamp to [-128, 127] and store into input->data.int8[i].
   //
   // Why this step exists: earlier versions of this project just memcpy'd
   // raw 0-255 bytes straight into the input tensor. That's only correct if

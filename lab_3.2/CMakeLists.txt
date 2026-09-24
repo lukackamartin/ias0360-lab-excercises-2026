@@ -45,7 +45,7 @@ target_link_libraries(sd_card_wrapper
     sd_custom_driver
 )
 
-add_executable(${PROGRAM_NAME} main.cpp) # main function to run.
+add_executable(${PROGRAM_NAME} main.cpp) # main function to run
 
 target_include_directories(${PROGRAM_NAME}
     PRIVATE
@@ -66,8 +66,8 @@ target_link_libraries(${PROGRAM_NAME}
     sd_card_wrapper
     http_client
     pico_stdlib
-    hardware_spi 
-    hardware_pwm 
+    hardware_spi
+    hardware_pwm
     hardware_adc
     pico_cyw43_arch_lwip_threadsafe_background
     pico_lwip_http
@@ -82,9 +82,9 @@ if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/test.cpp)
         test.cpp
     )
 
-    target_link_libraries(test_multicore_fifo 
+    target_link_libraries(test_multicore_fifo
         pico_stdlib
-        pico_multicore    
+        pico_multicore
         hardware_spi
         hardware_gpio
         FatFs_SPI
@@ -96,14 +96,14 @@ if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/test.cpp)
 
     pico_add_extra_outputs(test_multicore_fifo)
 endif()
-                        
+
 # target_compile_options(main PRIVATE
 #     $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
 # )
 
 
 
-set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS 
+set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS
     "-Wl,--print-memory-usage"
 )
 # enable usb output, disable uart output

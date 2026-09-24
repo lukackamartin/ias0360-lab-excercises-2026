@@ -18,7 +18,7 @@ static bool is_dot_or_dotdot(const char *name) {
 }
 
 SD_CardWrapper::SD_CardWrapper(){
-    
+
     if (!sd_init_driver()) {
         HALT_WITH_MESSAGE("sd_init_driver() failed.");
     }
@@ -145,7 +145,7 @@ FRESULT SD_CardWrapper::listDirRecursive(const char *path, list_stats_t *stats) 
 }
 
 FRESULT SD_CardWrapper::checkAndListFiles(void) {
-    
+
     char root[PATH_MAX_LEN];
     joinPath(root, sizeof(root), "");  // ensures a trailing slash when we add children
 
@@ -203,14 +203,14 @@ bool SD_CardWrapper::writeFile(const std::string& relPath, const void* data, siz
 
     UINT written = 0;
 
-    //uint8_t buffer[] = {0, 1, 2, 3, 4};
+    // uint8_t buffer[] = {0, 1, 2, 3, 4};
 
-    //fr = f_write(&file, buffer, sizeof(buffer), &written);
-    //if (fr != FR_OK) {
-    //    printf("f_write failed: %s (%d)\n", FRESULT_str(fr), fr);
-    //} else {
-    //    printf("Wrote %u bytes\n", written);
-    //}
+    // fr = f_write(&file, buffer, sizeof(buffer), &written);
+    // if (fr != FR_OK) {
+    //     printf("f_write failed: %s (%d)\n", FRESULT_str(fr), fr);
+    // } else {
+    //     printf("Wrote %u bytes\n", written);
+    // }
     fr = f_write(&file, data, len, &written);
     if (fr != FR_OK) {
         printFresult(fr, "write_to_file");
@@ -262,7 +262,6 @@ bool SD_CardWrapper::appendToFile(const std::string& relPath, const void* data, 
     printf("[SD_CardWrapper] Appended %u bytes to %s\n", written, abs_path);
     return true;
 }
-
 
 bool SD_CardWrapper::clearFile(const std::string& relPath) {
     if (!this->mounted_) return false;

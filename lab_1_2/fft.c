@@ -55,7 +55,7 @@ static int fft_radix2(c32* x, int n, int dir){
                 float ur = x[u].re, ui = x[u].im;
                 x[t].re = ur - tr; x[t].im = ui - ti;
                 x[u].re = ur + tr; x[u].im = ui + ti;
-                // twiddle update (CORDIC-free recurrence)
+                // Twiddle update (CORDIC-free recurrence)
                 float tmp = wr;
                 wr = wr + (wr*wpr - wi*wpi);
                 wi = wi + (wi*wpr + tmp*wpi);
@@ -80,12 +80,12 @@ static void fft_mag(const c32* X, int n, float* mag){
 // ---------- Peak picking (top-K, single-sided) ----------
 static void top_k_peaks(const float* mag, int n_half, int k_exclude_dc, int K,
                         int* out_idx, float* out_val, int* out_count){
-    // simple selection without sorting the full array
+    // Simple selection without sorting the full array
     int count = 0;
     for(int k=0; k<K; k++){
         int best_i = -1; float best_v = -1.0f;
         for(int i=k_exclude_dc; i<n_half; i++){
-            // skip already taken
+            // Skip already taken
             bool taken = false;
             for(int j=0;j<count;j++) if(out_idx[j]==i){ taken = true; break; }
             if(taken) continue;
@@ -103,7 +103,7 @@ static void top_k_peaks(const float* mag, int n_half, int k_exclude_dc, int K,
 int main(void){
 
     stdio_init_all();
-    sleep_ms(1500); 
+    sleep_ms(1500);
 
     // ---- Settings ----
     const float fs = 2200.0f;   // IMU sample rate (Hz)
@@ -162,7 +162,7 @@ int main(void){
     for (int n = 0; n < N; n++) { if (n) printf(","); printf("%.6f", (double)x[n]); } printf("\n");
     printf("\n");
     printf("TO COPY ONTO A TEXT FILE FOR COMPARSION WITH PC RUN FFT\n");
-    
+
     // Print to the serial the output of the fft to compare with the host run python implmentation of the fft filter
     printf("bin,freq,amp\n");
     for(int i=0;i<found;i++)

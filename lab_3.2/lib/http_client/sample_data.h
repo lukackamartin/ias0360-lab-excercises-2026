@@ -9,4 +9,4 @@ static const char IMU_SAMPLE_DATA[] = "";
 
 static const char IMAGE_SAMPLE_DATA[] = "";
 
-#endif // SAMPLE_DATA_H
+#endif  // SAMPLE_DATA_H

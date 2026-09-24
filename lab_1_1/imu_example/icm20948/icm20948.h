@@ -26,7 +26,7 @@
 #define REG_VAL_BIT_DIAMOND_DMP_RST 0x04
 #define REG_ADD_PWR_MIGMT_1 0x06
 #define REG_VAL_ALL_RGE_RESET 0x80
-#define REG_VAL_RUN_MODE 0x01 //Non low-power mode
+#define REG_VAL_RUN_MODE 0x01  // non low-power mode
 #define REG_ADD_LP_CONFIG 0x05
 #define REG_ADD_PWR_MGMT_1 0x06
 #define REG_ADD_PWR_MGMT_2 0x07
@@ -109,8 +109,8 @@
 extern "C" {
 #endif
 
-	typedef enum 
-	{  
+	typedef enum
+	{
 		  IMU_EN_SENSOR_TYPE_NULL = 0,
 		  IMU_EN_SENSOR_TYPE_ICM20948,
 		  IMU_EN_SENSOR_TYPE_MAX
@@ -138,11 +138,11 @@ extern "C" {
 
 	void imuInit(IMU_EN_SENSOR_TYPE *penMotionSensorType);
 	void imuDataAccGyrGet(IMU_ST_SENSOR_DATA *pstGyroRawData,
-						IMU_ST_SENSOR_DATA *pstAccelRawData); 
-	void imuDataGet(IMU_ST_ANGLES_DATA *pstAngles, 
+						IMU_ST_SENSOR_DATA *pstAccelRawData);
+	void imuDataGet(IMU_ST_ANGLES_DATA *pstAngles,
 					IMU_ST_SENSOR_DATA *pstGyroRawData,
 					IMU_ST_SENSOR_DATA *pstAccelRawData,
-					IMU_ST_SENSOR_DATA *pstMagnRawData); 
+					IMU_ST_SENSOR_DATA *pstMagnRawData);
 	void icm20948GyroRead(int16_t* ps16X, int16_t* ps16Y, int16_t* ps16Z);
 	void icm20948AccelRead(int16_t* ps16X, int16_t* ps16Y, int16_t* ps16Z);
 	void icm20948GyroFastRead(int16_t* ps16X, int16_t* ps16Y, int16_t* ps16Z);
@@ -154,5 +154,4 @@ extern "C" {
 }
 #endif
 
-#endif 
-	
+#endif

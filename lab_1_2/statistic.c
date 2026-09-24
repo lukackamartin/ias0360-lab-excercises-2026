@@ -5,18 +5,18 @@
 #include "pico/stdlib.h"
 
 #define N   64       // number of samples
-#define FS  2200.0f  // sample rate 
+#define FS  2200.0f  // sample rate
 
-// ---------- small helpers (statistics) ----------
+// ---------- Small helpers (statistics) ----------
 
-// arithmetic mean
+// Arithmetic mean
 static float mean_f32(const float* x, int n) {
     double acc = 0.0;
     for (int i = 0; i < n; i++) acc += x[i];
     return (float)(acc / (double)n);
 }
 
-// sample variance (denominator n-1)
+// Sample variance (denominator n-1)
 static float variance_f32(const float* x, int n, float mean) {
     if (n <= 1) return 0.0f;
     double acc = 0.0;
@@ -27,12 +27,12 @@ static float variance_f32(const float* x, int n, float mean) {
     return (float)(acc / (double)(n - 1));
 }
 
-// standard deviation from variance
+// Standard deviation from variance
 static float stddev_f32(float variance) {
     return sqrtf(variance);
 }
 
-// min & max
+// Min & max
 static void min_max_f32(const float* x, int n, float* mn, float* mx) {
     float a = x[0], b = x[0];
     for (int i = 1; i < n; i++) {
@@ -42,12 +42,12 @@ static void min_max_f32(const float* x, int n, float* mn, float* mx) {
     *mn = a; *mx = b;
 }
 
-// median (sorts a local copy; insertion sort - fine for small N)
+// Median (sorts a local copy; insertion sort - fine for small N)
 static float median_f32(const float* x, int n) {
     float tmp[n];
     for (int i = 0; i < n; i++) tmp[i] = x[i];
 
-    // insertion sort (ascending)
+    // Insertion sort (ascending)
     for (int i = 1; i < n; i++) {
         float key = tmp[i];
         int j = i - 1;
@@ -62,8 +62,8 @@ static float median_f32(const float* x, int n) {
     return 0.5f * (tmp[n / 2 - 1] + tmp[n / 2]);
 }
 
-// mode (for discrete/repeated values). If all counts are 1, no mode.
-// eps lets you treat near-equal floats as equal (use 0 for exact).
+// Mode (for discrete/repeated values). If all counts are 1, no mode.
+// Eps lets you treat near-equal floats as equal (use 0 for exact).
 static float mode_f32(const float* x, int n, int* count_out, float eps) {
     int best_count = 0;
     float best_val = NAN;
@@ -80,14 +80,14 @@ static float mode_f32(const float* x, int n, int* count_out, float eps) {
     }
 
     if (count_out) *count_out = best_count;
-    return best_val; // if best_count==1, there is no mode
+    return best_val;  // if best_count==1, there is no mode
 }
 
 int main(void) {
     stdio_init_all();
     sleep_ms(1200);
 
-    // ---- synthetic IMU-like data (already scaled to about [-1,1)) ----
+    // ---- Synthetic IMU-like data (already scaled to about [-1,1)) ----
     float ax[N], ay[N], az[N];
     for (int n = 0; n < N; n++) {
         float t = (float)n / FS;
@@ -97,7 +97,7 @@ int main(void) {
                       + 0.10f * sinf(2.0f * (float)M_PI * 7.0f * t);                   // mix
     }
 
-    // ---- statistics per axis ----
+    // ---- Statistics per axis ----
     float meanx = mean_f32(ax, N);
     float meany = mean_f32(ay, N);
     float meanz = mean_f32(az, N);
@@ -144,7 +144,7 @@ int main(void) {
     if (mcount_z > 1) printf("      mode=% .5f (count=%d)\n", modez, mcount_z);
     else              printf("      mode: none (no repeated values)\n");
 
-    // ---- optional: peek first 10 samples ----
+    // ---- Optional: peek first 10 samples ----
     printf("\nFirst 10 samples (ax, ay, az):\n");
     for (int i = 0; i < 10; i++) {
         printf("%3d | % .5f % .5f % .5f\n", i, ax[i], ay[i], az[i]);

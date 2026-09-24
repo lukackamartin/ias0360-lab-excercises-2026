@@ -42,4 +42,4 @@ class Model {
         int input_zero_point_ = 0;
 };
 
-#endif // TFLITE_INFERENCE_TEST_MODEL_H_
+#endif  // TFLITE_INFERENCE_TEST_MODEL_H_

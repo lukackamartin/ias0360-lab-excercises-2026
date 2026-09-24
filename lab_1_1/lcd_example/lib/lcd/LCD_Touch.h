@@ -9,7 +9,6 @@
 #include "pico/stdlib.h"
 #include "pico/float.h"
 
-
 #define TP_PRESS_DOWN           0x80
 #define TP_PRESSED              0x40
 
@@ -27,7 +26,7 @@ typedef struct {
 	float fXfac;
 	float fYfac;
 	// Select the coordinates of the XPT2046 touch
-	// screen relative to what scan direction
+	// Screen relative to what scan direction
 	LCD_SCAN_DIR TP_Scan_Dir;
 }TP_DEV;
 
@@ -36,9 +35,8 @@ typedef struct{
 	POINT Xpoint;
 	POINT Ypoint;
 	COLOR Color;
-	DOT_PIXEL DotPixel; 
+	DOT_PIXEL DotPixel;
 }TP_DRAW;
-
 
 void TP_GetAdFac(void);
 void TP_Adjust(void);

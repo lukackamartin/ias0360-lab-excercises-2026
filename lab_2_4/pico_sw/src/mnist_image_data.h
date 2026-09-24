@@ -14,4 +14,4 @@ extern const uint8_t mnist_image_data_7[];
 extern const uint8_t mnist_image_data_8[];
 extern const uint8_t mnist_image_data_9[];
 
-#endif // TFLITE_INFERENCE_TEST_MNIST_IMAGE_DATA_H_
+#endif  // TFLITE_INFERENCE_TEST_MNIST_IMAGE_DATA_H_

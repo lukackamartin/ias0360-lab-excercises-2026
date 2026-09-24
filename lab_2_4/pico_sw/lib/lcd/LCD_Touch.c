@@ -1,15 +1,13 @@
 /*****************************************************************************
-* | File      	:	LCD_Touch.c
-* | Author      :   Waveshare team
-* | Function    :	LCD Touch Pad Driver and Draw
-* | Info        :
-*   Image scanning
-*      Please use progressive scanning to generate images or fonts
+* | File        : LCD_Touch.c
+* | Author      : Waveshare team
+* | Function    : LCD Touch Pad Driver and Draw
+* | Info        : Image scanning: Please use progressive scanning to
+*                 generate images or fonts
 *----------------
-* |	This version:   V1.0
-* | Date        :   2017-08-16
-* | Info        :   Basic version
-*
+* | This version: V1.0
+* | Date        : 2017-08-16
+* | Info        : Basic version
 ******************************************************************************/
 #include "LCD_Touch.h"
 
@@ -34,11 +32,10 @@ static BOX_REFERENCE box_refs[4];
 static INFERENCE* inference;
 static uint32_t last_login_button_touch_time = 0;
 
-
-#define TP_CMD_X              0xD0  // Differential X position
-#define TP_CMD_Y              0x90  // Differential Y position
-#define TP_CMD_Z1             0xB0  // Differential Z1 touch pressure
-#define TP_CMD_Z2             0xC0  // Differential Z2 touch pressure
+#define TP_CMD_X              0xD0  // differential X position
+#define TP_CMD_Y              0x90  // differential Y position
+#define TP_CMD_Z1             0xB0  // differential Z1 touch pressure
+#define TP_CMD_Z2             0xC0  // differential Z2 touch pressure
 
 #define TP_TOUCH_SPI_BAUDRATE 1000000                  // 1.0 MHz for settling SAR ADC
 #define TP_LCD_SPI_BAUDRATE   (125 * 1000 * 1000 / 6)  // 20.833 MHz for ILI9488
@@ -46,10 +43,10 @@ static uint32_t last_login_button_touch_time = 0;
 #define TP_ADC_VALID_MIN      80
 #define TP_ADC_VALID_MAX      4015
 #define TP_SAMPLES_COUNT      5
-#define TP_ERR_RANGE          30    // Cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
-#define TP_Z1_MIN             90    // Minimum Z1 ADC count for physical contact
+#define TP_ERR_RANGE          30    // cluster tolerance in ADC counts (~3.5 px, Linux ti,debounce-tol)
+#define TP_Z1_MIN             90    // minimum Z1 ADC count for physical contact
 #define TP_X_PLATE_OHMS       400   // Waveshare panel sheet resistance in Ohms (Device Tree specification)
-#define TP_R_TOUCH_MAX        1500  // Maximum physical contact resistance in Ohms (Linux ti,pressure-max)
+#define TP_R_TOUCH_MAX        1500  // maximum physical contact resistance in Ohms (Linux ti,pressure-max)
 
 static uint8_t sTP_PenDownCount = 0;
 
@@ -190,19 +187,18 @@ static void TP_Read_ADC_XY(uint16_t *pXCh_Adc, uint16_t *pYCh_Adc)
     TP_Read_TwiceADC(pXCh_Adc, pYCh_Adc);
 }
 
-/*******************************************************************************
-function:
-		Calculation
+/********************************************************************************
+function: Calculation
 parameter:
-		chCoordType:
-					1 : calibration
-					0 : relative position
-*******************************************************************************/
+    chCoordType:
+        1 : calibration
+        0 : relative position
+********************************************************************************/
 static uint8_t TP_Scan(uint8_t chCoordType)
 {
     // In X, Y coordinate measurement, IRQ is disabled and output is low
     if (!DEV_Digital_Read(TP_IRQ_PIN))
-    {  // Press the button to press
+    {  // press the button to press
         // Read the physical coordinates
         if (chCoordType)
         {
@@ -225,7 +221,7 @@ static uint8_t TP_Scan(uint8_t chCoordType)
             {
                 //DEBUG("(Xad,Yad) = %d,%d\r\n",sTP_DEV.Xpoint,sTP_DEV.Ypoint);
                 if (sTP_DEV.TP_Scan_Dir == R2L_D2U)
-                {  // Converts the result to screen coordinates
+                {  // converts the result to screen coordinates
                     sTP_Draw.Xpoint = sTP_DEV.fXfac * sTP_DEV.Xpoint +
                                       sTP_DEV.iXoff;
                     sTP_Draw.Ypoint = sTP_DEV.fYfac * sTP_DEV.Ypoint +
@@ -260,7 +256,7 @@ static uint8_t TP_Scan(uint8_t chCoordType)
             }
         }
         if (0 == (sTP_DEV.chStatus & TP_PRESS_DOWN))
-        {  // Not being pressed
+        {  // not being pressed
             if (++sTP_PenDownCount >= 2)
             {
                 sTP_DEV.chStatus = TP_PRESS_DOWN | TP_PRESSED;
@@ -288,14 +284,13 @@ static uint8_t TP_Scan(uint8_t chCoordType)
     return (sTP_DEV.chStatus & TP_PRESS_DOWN);
 }
 
-/*******************************************************************************
-function:
-		Draw Cross
+/********************************************************************************
+function: Draw Cross
 parameter:
-			Xpoint :	The x coordinate of the point
-			Ypoint :	The y coordinate of the point
-			Color  :	Set color
-*******************************************************************************/
+    Xpoint : The x coordinate of the point
+    Ypoint : The y coordinate of the point
+    Color  : Set color
+********************************************************************************/
 static void TP_DrawCross(POINT Xpoint, POINT Ypoint, COLOR Color)
 {
     GUI_DrawLine(Xpoint - 12, Ypoint, Xpoint + 12, Ypoint,
@@ -306,16 +301,15 @@ static void TP_DrawCross(POINT Xpoint, POINT Ypoint, COLOR Color)
     GUI_DrawCircle(Xpoint, Ypoint, 6, Color, DRAW_EMPTY, DOT_PIXEL_1X1);
 }
 
-/*******************************************************************************
-function:
-		The corresponding ADC value is displayed on the LC
+/********************************************************************************
+function: The corresponding ADC value is displayed on the LC
 parameter:
-			(Xpoint0 ,Xpoint0):	The coordinates of the first point
-			(Xpoint1 ,Xpoint1):	The coordinates of the second point
-			(Xpoint2 ,Xpoint2):	The coordinates of the third point
-			(Xpoint3 ,Xpoint3):	The coordinates of the fourth point
-			hwFac	:	Percentage of error
-*******************************************************************************/
+    (Xpoint0, Xpoint0) : The coordinates of the first point
+    (Xpoint1, Xpoint1) : The coordinates of the second point
+    (Xpoint2, Xpoint2) : The coordinates of the third point
+    (Xpoint3, Xpoint3) : The coordinates of the fourth point
+    hwFac              : Percentage of error
+********************************************************************************/
 static void TP_ShowInfo(POINT Xpoint0, POINT Ypoint0,
                         POINT Xpoint1, POINT Ypoint1,
                         POINT Xpoint2, POINT Ypoint2,
@@ -362,10 +356,9 @@ static void TP_ShowInfo(POINT Xpoint0, POINT Ypoint0,
     }
 }
 
-/*******************************************************************************
-function:
-		Touch screen adjust
-*******************************************************************************/
+/********************************************************************************
+function: Touch screen adjust
+********************************************************************************/
 void TP_Adjust(void)
 {
     uint8_t cnt = 0;
@@ -421,17 +414,17 @@ void TP_Adjust(void)
 
                 // 1.Compare the X direction
                 Dx = abs((int16_t)(XYpoint_Arr[0][0] -
-                                   XYpoint_Arr[1][0])); //x1 - x2
+                                   XYpoint_Arr[1][0]));  // x1 - x2
                 Dy = abs((int16_t)(XYpoint_Arr[0][1] -
-                                   XYpoint_Arr[1][1])); //y1 - y2
+                                   XYpoint_Arr[1][1]));  // y1 - y2
                 Dx *= Dx;
                 Dy *= Dy;
                 Sqrt1 = sqrt(Dx + Dy);
 
                 Dx = abs((int16_t)(XYpoint_Arr[2][0] -
-                                   XYpoint_Arr[3][0])); //x3 - x4
+                                   XYpoint_Arr[3][0]));  // x3 - x4
                 Dy = abs((int16_t)(XYpoint_Arr[2][1] -
-                                   XYpoint_Arr[3][1])); //y3 - y4
+                                   XYpoint_Arr[3][1]));  // y3 - y4
                 Dx *= Dx;
                 Dy *= Dy;
                 Sqrt2 = sqrt(Dx + Dy);
@@ -455,20 +448,20 @@ void TP_Adjust(void)
 
                 // 2.Compare the Y direction
                 Dx = abs((int16_t)(XYpoint_Arr[0][0] -
-                                   XYpoint_Arr[2][0])); //x1 - x3
+                                   XYpoint_Arr[2][0]));  // x1 - x3
                 Dy = abs((int16_t)(XYpoint_Arr[0][1] -
-                                   XYpoint_Arr[2][1])); //y1 - y3
+                                   XYpoint_Arr[2][1]));  // y1 - y3
                 Dx *= Dx;
                 Dy *= Dy;
                 Sqrt1 = sqrt(Dx + Dy);
 
                 Dx = abs((int16_t)(XYpoint_Arr[1][0] -
-                                   XYpoint_Arr[3][0])); //x2 - x4
+                                   XYpoint_Arr[3][0]));  // x2 - x4
                 Dy = abs((int16_t)(XYpoint_Arr[1][1] -
-                                   XYpoint_Arr[3][1])); //y2 - y4
+                                   XYpoint_Arr[3][1]));  // y2 - y4
                 Dx *= Dx;
                 Dy *= Dy;
-                Sqrt2 = sqrt(Dx + Dy); //
+                Sqrt2 = sqrt(Dx + Dy);  //
 
                 Dsqrt = (float)Sqrt1 / Sqrt2;
                 if (Dsqrt < 0.95 || Dsqrt > 1.05)
@@ -485,24 +478,24 @@ void TP_Adjust(void)
                                  sLCD_DIS.LCD_Dis_Page - Mar_Val, WHITE);
                     TP_DrawCross(Mar_Val, Mar_Val, RED);
                     continue;
-                } //
+                }  //
 
-                //3.Compare diagonal
+                // 3.Compare diagonal
                 Dx = abs((int16_t)(XYpoint_Arr[1][0] -
-                                   XYpoint_Arr[2][0])); //x1 - x3
+                                   XYpoint_Arr[2][0]));  // x1 - x3
                 Dy = abs((int16_t)(XYpoint_Arr[1][1] -
-                                   XYpoint_Arr[2][1])); //y1 - y3
+                                   XYpoint_Arr[2][1]));  // y1 - y3
                 Dx *= Dx;
                 Dy *= Dy;
-                Sqrt1 = sqrt(Dx + Dy); //;
+                Sqrt1 = sqrt(Dx + Dy);  // ;
 
                 Dx = abs((int16_t)(XYpoint_Arr[0][0] -
-                                   XYpoint_Arr[3][0])); //x2 - x4
+                                   XYpoint_Arr[3][0]));  // x2 - x4
                 Dy = abs((int16_t)(XYpoint_Arr[0][1] -
-                                   XYpoint_Arr[3][1])); //y2 - y4
+                                   XYpoint_Arr[3][1]));  // y2 - y4
                 Dx *= Dx;
                 Dy *= Dy;
-                Sqrt2 = sqrt(Dx + Dy); //
+                Sqrt2 = sqrt(Dx + Dy);  //
 
                 Dsqrt = (float)Sqrt1 / Sqrt2;
                 if (Dsqrt < 0.95 || Dsqrt > 1.05)
@@ -521,13 +514,13 @@ void TP_Adjust(void)
                     continue;
                 }
 
-                //4.Get the scale factor and offset
-                //Get the scanning direction of the touch screen
+                // 4.Get the scale factor and offset
+                // Get the scanning direction of the touch screen
                 sTP_DEV.TP_Scan_Dir = sLCD_DIS.LCD_Scan_Dir;
                 sTP_DEV.fXfac = 0;
 
-                //According to the display direction to get
-                //the corresponding scale factor and offset
+                // According to the display direction to get
+                // The corresponding scale factor and offset
                 if (sTP_DEV.TP_Scan_Dir == R2L_D2U)
                 {
                     printf("R2L_D2U\r\n");
@@ -611,14 +604,14 @@ void TP_Adjust(void)
                 printf("sTP_DEV.iXoff = %d \r\n", sTP_DEV.iXoff);
                 printf("sTP_DEV.iYoff = %d \r\n", sTP_DEV.iYoff);
 
-                //6.Calibration is successful
+                // 6.Calibration is successful
                 LCD_Clear(LCD_BACKGROUND);
                 GUI_DisString_EN(35, 110, "Touch Screen Adjust OK!",
                                  &Font16, FONT_BACKGROUND, RED);
                 Driver_Delay_ms(1000);
                 LCD_Clear(LCD_BACKGROUND);
                 return;
-                //Exception handling,Reset  Initial value
+                // Exception handling,Reset  Initial value
             default:
                 cnt = 0;
                 TP_DrawCross(sLCD_DIS.LCD_Dis_Column - Mar_Val,
@@ -632,10 +625,9 @@ void TP_Adjust(void)
     }
 }
 
-/*******************************************************************************
-function:
-		Use the default calibration factor
-*******************************************************************************/
+/********************************************************************************
+function: Use the default calibration factor
+********************************************************************************/
 void TP_GetAdFac(void)
 {
     if (LCD_2_8 == id)
@@ -685,10 +677,9 @@ void TP_GetAdFac(void)
     }
 }
 
-/*******************************************************************************
-function:
-		Paint the Delete key and paint color choose area
-*******************************************************************************/
+/********************************************************************************
+function: Paint the Delete key and paint color choose area
+********************************************************************************/
 void TP_Dialog(void)
 {
     LCD_Clear(LCD_BACKGROUND);
@@ -707,16 +698,16 @@ void TP_Dialog(void)
     else
     {
 
-        //Horizontal screen display
+        // Horizontal screen display
         if (sLCD_DIS.LCD_Dis_Column > sLCD_DIS.LCD_Dis_Page)
         {
-            //Clear screen
+            // Clear screen
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 60, 0,
                              "CLEAR", &Font16, RED, BLUE);
-            //adjustment
+            // Adjustment
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 0,
                              "AD", &Font16, RED, BLUE);
-            //choose the color
+            // Choose the color
             GUI_DrawRectangle(sLCD_DIS.LCD_Dis_Column - 50, 20,
                               sLCD_DIS.LCD_Dis_Column, 70,
                               BLUE, DRAW_FULL, DOT_PIXEL_1X1);
@@ -734,7 +725,7 @@ void TP_Dialog(void)
                               BLACK, DRAW_FULL, DOT_PIXEL_1X1);
         }
         else
-        {  // Vertical screen display
+        {  // vertical screen display
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 60, 0,
                              "CLEAR", &Font16, RED, BLUE);
             GUI_DisString_EN(sLCD_DIS.LCD_Dis_Column - 120, 0,
@@ -748,25 +739,24 @@ void TP_Dialog(void)
     }
 }
 
-/*******************************************************************************
-function:
-		Draw Board
-*******************************************************************************/
+/********************************************************************************
+function: Draw Board
+********************************************************************************/
 void TP_DrawBoard(void)
 {
-    //	sTP_DEV.chStatus &= ~(1 << 6);
+    // 	sTP_DEV.chStatus &= ~(1 << 6);
     TP_Scan(0);
     if (sTP_DEV.chStatus & TP_PRESS_DOWN)
-    {  // Press the button
-        //Horizontal screen
+    {  // press the button
+        // Horizontal screen
         if (sTP_Draw.Xpoint < sLCD_DIS.LCD_Dis_Column &&
-            //Determine whether the law is legal
+            // Determine whether the law is legal
             sTP_Draw.Ypoint < sLCD_DIS.LCD_Dis_Page)
         {
             if (sLCD_DIS.LCD_Dis_Column > sLCD_DIS.LCD_Dis_Page && !inference->IsProcessing)
             {
 
-                //printf("horizontal x:%d,y:%d\n", sTP_Draw.Xpoint, sTP_Draw.Ypoint);
+                // printf("horizontal x:%d,y:%d\n", sTP_Draw.Xpoint, sTP_Draw.Ypoint);
 
                 if (
                     sTP_Draw.Xpoint > (sLCD_DIS.LCD_Dis_Column - 220) / 2 + 10 &&
@@ -774,7 +764,7 @@ void TP_DrawBoard(void)
                     sTP_Draw.Ypoint > 240 &&
                     sTP_Draw.Ypoint < 270
                     )
-                {   
+                {
                     // --- LOGIN BUTTON PRESSED ---
                     // Handle debuncing
                     uint32_t current_time = to_ms_since_boot(get_absolute_time());
@@ -786,7 +776,7 @@ void TP_DrawBoard(void)
 
                     // Update the last touch time
                     last_login_button_touch_time = current_time;
-                    
+
                     // Convert written digit in 28x28 input shape
                     set_box_content();
 
@@ -800,24 +790,22 @@ void TP_DrawBoard(void)
                 {
                     // --- CLEAR BUTTON PRESSED ---
                     init_gui();
-                    //reset_inference(NULL);
-                    //clear_drawing();
+                    // reset_inference(NULL);
+                    // clear_drawing();
                 }
                 else
                 {
                     int box_index = find_box_by_point();
                     if (box_index >= 0)
                     {
-                        // drawing cross
+                        // Drawing cross
                         GUI_DrawPoint(sTP_Draw.Xpoint - POINT_SPACE, sTP_Draw.Ypoint + POINT_SPACE,
                                     sTP_Draw.Color, DOT_PIXEL_2X2, DOT_FILL_RIGHTUP);
                         GUI_DrawPoint(sTP_Draw.Xpoint + POINT_SPACE, sTP_Draw.Ypoint + POINT_SPACE,
                                     sTP_Draw.Color, DOT_PIXEL_2X2, DOT_FILL_RIGHTUP);
 
-
                         GUI_DrawPoint(sTP_Draw.Xpoint, sTP_Draw.Ypoint,
                                     sTP_Draw.Color, DOT_PIXEL_2X2, DOT_FILL_RIGHTUP);
-
 
                         GUI_DrawPoint(sTP_Draw.Xpoint - POINT_SPACE, sTP_Draw.Ypoint - POINT_SPACE,
                                     sTP_Draw.Color, DOT_PIXEL_2X2, DOT_FILL_RIGHTUP);
@@ -833,7 +821,7 @@ void TP_DrawBoard(void)
                         box_refs[box_index].content[center_index_y + 1][center_index_x + 1] = 1;
                         box_refs[box_index].content[center_index_y - 1][center_index_x - 1] = 1;
                         box_refs[box_index].content[center_index_y + 1][center_index_x + 1] = 1;
-                        
+
                         box_refs[box_index].content[center_index_y - 1][center_index_x] = 1;
                         box_refs[box_index].content[center_index_y + 1][center_index_x] = 1;
                         box_refs[box_index].content[center_index_y][center_index_x - 1] = 1;
@@ -867,10 +855,10 @@ void set_box_content(void) {
                     }
                 }
                 float ratio = (float)sum / (float)(WINDOW_SIZE * WINDOW_SIZE);
-                if (ratio > 1.) ratio = 1.; 
+                if (ratio > 1.) ratio = 1.;
                 uint8_t value = (uint8_t)(255 * ratio);
                 // Outlier rejection
-                //if (value < 86) value = 0;
+                // if (value < 86) value = 0;
                 // Calculate the average and store it in the output array
                 inference->UserInputs[index].InputData[i*INPUT_IMAGE_SIZE + j] = value;
             }
@@ -881,12 +869,12 @@ void set_box_content(void) {
 /**
  * Check if point falls in any boxes
  */
-int find_box_by_point(void) 
+int find_box_by_point(void)
 {
     int i = 0;
     while (i < DIGIT_INPUT_COUNT) {
         if (
-            box_refs[i].start_x + BOX_PADDING < sTP_Draw.Xpoint && 
+            box_refs[i].start_x + BOX_PADDING < sTP_Draw.Xpoint &&
             sTP_Draw.Xpoint < box_refs[i].end_x - BOX_PADDING &&
             box_refs[i].start_y + BOX_PADDING < sTP_Draw.Ypoint &&
             sTP_Draw.Ypoint < box_refs[i].end_y - BOX_PADDING
@@ -908,19 +896,19 @@ void clear_drawing(void)
         GUI_DrawRectangle(box_refs[i].start_x, box_refs[i].start_y, box_refs[i].end_x, box_refs[i].end_y, WHITE, DRAW_FULL, DOT_PIXEL_1X1);
         // Clear predicted label
         GUI_DrawRectangle(box_refs[i].start_x, box_refs[i].start_y - 14, box_refs[i].end_x, box_refs[i].start_y - 2, WHITE, DRAW_FULL, DOT_PIXEL_1X1);
-        
+
         for (int row=0; row<BOX_SIZE; row++) {
             for (int col=0; col<BOX_SIZE; col++) {
                 box_refs[i].content[row][col] = 0;
             }
         }
-    } 
+    }
 }
 
 /**
  * Draw inference result on the display right above each box
  */
-void draw_inference_result(void) 
+void draw_inference_result(void)
 {
     for (int i=0; i<DIGIT_INPUT_COUNT; i++) {
         if (inference->UserInputs[i].PredictedDigit >= 0) {
@@ -932,7 +920,7 @@ void draw_inference_result(void)
                 sprintf(temp, "%d", inference->UserInputs[i].PredictedDigit);
             }
             strcat(result, temp);
-            
+
             GUI_DisString_EN(box_refs[i].start_x + 2, box_refs[i].start_y - 12, result, &Font12, WHITE, BLACK);
         }
     }
@@ -947,7 +935,7 @@ void reinitialize_to_zero(uint8_t matrix[INPUT_IMAGE_SIZE * INPUT_IMAGE_SIZE]) {
 /**
  * Reset prediction result and input data
  */
-void reset_inference(INFERENCE* _inference) 
+void reset_inference(INFERENCE* _inference)
 {
     if (_inference != NULL) {
         inference = _inference;
@@ -975,7 +963,6 @@ void init_gui(void)
     }
     // Default color to black
     sTP_Draw.Color = BLACK;
-    
 
     // Display "MACHINE LEARNING" and "FOR EMBEDDED SYSTEM" at the top of the screen
     GUI_DisString_EN(100, 20, "MACHINE LEARNING", &Font24, WHITE, RED);
@@ -992,7 +979,6 @@ void init_gui(void)
 
         // Draw white interior
         GUI_DrawRectangle(x, y, x + BOX_SIZE, y + BOX_SIZE, WHITE, DRAW_FULL, DOT_PIXEL_1X1);
-        
 
         BOX_REFERENCE p = { .start_x = x, .start_y = y, .end_x = x + BOX_SIZE, .end_y = y + BOX_SIZE, .content = {0}};
         box_refs[i] = p;
@@ -1001,7 +987,7 @@ void init_gui(void)
     // Calculate positions for the "LOGIN" and "CLEAR" buttons
     int button_width = 100;
     int button_height = 40;
-    int button_space = 20;  // Space between the two buttons
+    int button_space = 20;  // space between the two buttons
     int buttons_total_width = 2 * button_width + button_space;
     int buttons_start_x = (sLCD_DIS.LCD_Dis_Column - buttons_total_width) / 2;
     int button_y = start_y + BOX_SIZE + 30;
@@ -1017,10 +1003,9 @@ void init_gui(void)
     GUI_DisString_EN(clear_button_x + 15, button_y + 15, "CLEAR", &Font20, BLACK, WHITE);
 }
 
-/*******************************************************************************
-function:
-		Touch pad initialization
-*******************************************************************************/
+/********************************************************************************
+function: Touch pad initialization
+********************************************************************************/
 void TP_Init(LCD_SCAN_DIR Lcd_ScanDir)
 {
     DEV_Digital_Write(TP_CS_PIN, 1);

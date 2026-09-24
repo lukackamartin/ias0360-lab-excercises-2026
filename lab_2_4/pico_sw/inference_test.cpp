@@ -1,6 +1,6 @@
-#include <cmath> 
+#include <cmath>
 #include<iostream>
-#include <cstdlib> 
+#include <cstdlib>
 #include <iostream>
 #include <stdio.h>
 
@@ -14,14 +14,13 @@
 
 #include "inference.h"
 
-
 using namespace std;
 
 int main(void) {
 
   System_Init();
   sleep_ms(5000);
-  
+
   inference_test();
   return 0;
 }
