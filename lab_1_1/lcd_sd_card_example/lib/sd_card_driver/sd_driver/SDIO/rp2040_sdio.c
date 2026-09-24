@@ -835,6 +835,16 @@ bool rp2040_sdio_init(sd_card_t *sd_card_p, float clk_div) {
     gpio_set_function(SDIO_D2, fn);
     gpio_set_function(SDIO_D3, fn);
 
+    // Pull-ups on CMD and all data lines per SD Physical Layer Spec Section 4.3.3.
+    // Crucial on Pico-Eval-Board because D0 (GP19) has NO external pull-up resistor
+    // on the PCB, and RP2040 defaults to pull-down enabled (PDE=1) on all GPIO pads.
+    // Without internal pull-up, DAT0 stays low after write busy release, stalling PIO.
+    gpio_pull_up(SDIO_CMD);
+    gpio_pull_up(SDIO_D0);
+    gpio_pull_up(SDIO_D1);
+    gpio_pull_up(SDIO_D2);
+    gpio_pull_up(SDIO_D3);
+
     gpio_set_slew_rate(SDIO_CMD, GPIO_SLEW_RATE_FAST);
     gpio_set_slew_rate(SDIO_CLK, GPIO_SLEW_RATE_FAST);
     gpio_set_slew_rate(SDIO_D0, GPIO_SLEW_RATE_FAST);
