@@ -55,3 +55,7 @@ build_*/
 .cache/
 .ipython/
 .keras/
+
+# Downloaded dataset archives
+**/data/
+
